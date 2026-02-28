@@ -1,0 +1,61 @@
+================================================================================
+🛡️ CYBERGUARD AI SAAS PLATFORM - SYSTEM WORKFLOW & ARCHITECTURE 🛡️
+================================================================================
+Generated: 2026-02-16
+Version: 2.2.0 (Enterprise Intelligence Edition)
+
+1. SYSTEM ARCHITECTURE OVERVIEW
+-------------------------------
+The platform follows a modern "Modular Monolith" architecture with a multi-layered 
+security pipeline that correlates decentralized threats in real-time.
+
+- FRONTEND: React (Vite) + Lucide Icons + Premium Glassmorphism UI.
+- BACKEND: FastAPI (Python 3.11+) + SQLAlchemy (ORM) + Pydantic (Validation).
+- DATABASE: SQLite (Local) / PostgreSQL (Production) + Multi-tenant Workspace isolation.
+- AI AGENTS: SecurityAgent (Orchestrator) + Scikit-Learn (ML Detectors).
+- INTEL LAYER: CorrelationEngine + ThreatIntelService + Advanced Audit Logging.
+
+2. CORE WORKFLOWS
+-----------------
+
+A. USER ONBOARDING & AUTHENTICATION
+   1. User registers via /api/v1/register -> Auto-generates unique Workspace.
+   2. Audit Log records 'user_registered' and 'login_success' events.
+   3. JWT Token is generated and stored for secure tenant-isolated sessions.
+
+B. ENTERPRISE INTELLIGENCE PIPELINE (THE BRAIN)
+   1. Pre-flight Check: 'ThreatIntelService' normalizes input (strips protocols) 
+      and checks against blacklisted domains/IPs.
+   2. ML Analysis: Vector-specific models (URL/Email/Network) run in parallel.
+   3. Pattern Matching: 'CorrelationEngine' searches last 24h for entity recurrences.
+   4. Risk Aggregation: Final score is adjusted based on intel status and 
+      cross-vector correlation (Pattern matches boost risk score).
+   5. Secure Logging: High-fidelity details saved to 'ScanHistory' with indexed entities.
+
+C. ADVANCED COMPLIANCE & AUDIT LOGGING
+   - Every mutation (POST/DELETE) is captured by the 'AuditMiddleware'.
+   - Security-critical events (API Key changes, Login) are manually audited 
+     with user_id and client metadata in a dedicated 'audit_logs' table.
+
+D. API KEY LIFECYCLE
+   - Keys (cg_...) are hashed using SHA-256 for secure DB storage.
+   - Quotas and Rate Limits are enforced per-workspace via 'SaaSGuard'.
+
+3. DIRECTORY MAP (WHERE IT HAPPENS)
+-----------------------------------
+- /src/api/v1/    : API Routes & Auth dependencies.
+- /src/agent/     : Orchestrator integrating Intel & Correlation.
+- /src/services/  : ML Detections & Threat Intelligence lookups.
+- /src/utils/     : Scoring logic, SaaS Guard, Correlation, and Audit utilities.
+- /src/models/    : Multi-tenant schemas (User, Workspace, ScanHistory, AuditLog).
+
+4. OPERATIONAL COMMANDS
+------------------------
+- Start Backend: $env:PYTHONPATH="."; uvicorn src.main:app --reload
+- Start Frontend: cd dashboard; npm run dev
+- Seed Intel & Test Data: python seed_test_data.py
+- Verify Intelligence: python verify_intelligence.py
+
+================================================================================
+🛡️ SECURED BY CYBERGUARD AI ORCHESTRATOR - ENTERPRISE INTEL HARDENED
+================================================================================

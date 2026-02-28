@@ -1,0 +1,6 @@
+datasets/
+models/
+*.csv
+*.pkl
+__pycache__/
+*.db
