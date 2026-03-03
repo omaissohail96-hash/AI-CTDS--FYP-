@@ -45,6 +45,8 @@ class SecurityAgent:
             tasks.append(self._scan_email(data))
         elif input_type == "network":
             tasks.append(self._scan_network(data))
+        elif input_type == "web":
+            tasks.append(self._scan_web(data))
         else:
             if entity_to_check.startswith("http"):
                 tasks.append(self._scan_url(data))
@@ -108,3 +110,6 @@ class SecurityAgent:
 
     async def _scan_network(self, flow: Dict[str, Any]):
         return DetectionService.analyze_network(flow)
+
+    async def _scan_web(self, payload: str):
+        return DetectionService.analyze_web(payload)

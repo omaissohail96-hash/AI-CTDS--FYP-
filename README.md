@@ -95,6 +95,63 @@ Enterprise compliance is maintained via a global **Audit Middleware** that recor
 
 ---
 
+## 🔌 API Integration Guide
+
+CyberGuard AI is built for seamless, headless integration. You can generate API keys in the **Settings** tab of the Dashboard to protect your own business workflows.
+
+### 1. Authentication
+All API requests must include your API key in the `X-API-KEY` header.
+- **Header**: `X-API-KEY: your_generated_key_here`
+
+### 2. Integration Scenarios
+
+#### 📧 Email Protection (Python Example)
+Scan incoming email content for phishing before it results in a user breach.
+```python
+import requests
+
+API_URL = "http://localhost:8000/api/v1/agent/analyze"
+HEADERS = {"X-API-KEY": "cg_live_xxxxxx"}
+
+payload = {
+    "type": "email",
+    "data": {
+        "subject": "Urgent Action Required",
+        "body": "Your bank account has been locked. Verify here: http://evil-phishing.com"
+    }
+}
+
+response = requests.post(API_URL, json=payload, headers=HEADERS)
+verdict = response.json()["agent_verdict"]
+
+if verdict["label"] == "CRITICAL":
+    print(f"🚨 BLOCKED: {verdict['summary']}")
+```
+
+#### 🌐 Website Security (JavaScript/Fetch)
+Validate user-submitted URLs or comments in real-time to prevent malicious links.
+```javascript
+const sanitizeInput = async (userInput) => {
+  const response = await fetch('http://localhost:8000/api/v1/agent/analyze', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-KEY': 'cg_live_xxxxxx'
+    },
+    body: JSON.stringify({ type: 'url', data: userInput })
+  });
+  
+  const result = await response.json();
+  if (result.agent_verdict.score > 80) {
+    console.error("⚠️ Malicious entity detected. Blocking request.");
+    return false;
+  }
+  return true;
+};
+```
+
+---
+
 ## 🛠️ Project Structure
 - `/src/api/v1/`: API endpoints (Auth, Agent, Workspace).
 - `/src/agent/`: AI Orchestrator logic.

@@ -29,7 +29,7 @@ const URLScanner = () => { // Changed function declaration to arrow function
         }
     }
 
-    const isSafe = result?.agent_verdict?.label?.toLowerCase() === 'low';
+    const isSafe = result?.agent_verdict?.label?.toLowerCase() === 'secure';
 
     return (
         <div className="scanner-card">
@@ -71,7 +71,7 @@ const URLScanner = () => { // Changed function declaration to arrow function
                     </div>
                     <div className="result-details">
                         <div className="result-row">
-                            <span>Confidence</span>
+                            <span>Risk Score</span>
                             <span>{result.agent_verdict?.score}%</span>
                         </div>
                         <div className="result-row">

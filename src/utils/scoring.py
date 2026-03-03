@@ -7,7 +7,7 @@ class ScoringEngine:
     """
     
     LEVELS = {
-        "LOW": (0, 30),
+        "SECURE": (0, 30),
         "MEDIUM": (31, 60),
         "HIGH": (61, 85),
         "CRITICAL": (86, 100)
@@ -16,7 +16,7 @@ class ScoringEngine:
     @staticmethod
     def calculate_risk(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         if not results:
-            return {"score": 0, "label": "LOW", "summary": "No threats analyzed."}
+            return {"score": 0, "label": "SECURE", "summary": "No threats analyzed."}
 
         # Weighting logic (In a real SaaS, these would be configurable per tenant)
         # We give higher weight to confirmed phishing and network intrusions
@@ -46,7 +46,7 @@ class ScoringEngine:
         final_score = max(scores) if scores else 0
         
         # Assign Label
-        label = "LOW"
+        label = "SECURE"
         for l, (min_s, max_s) in ScoringEngine.LEVELS.items():
             if min_s <= final_score <= max_s:
                 label = l
@@ -65,7 +65,7 @@ class ScoringEngine:
     def _generate_summary(score: float, label: str, results: List[Dict[str, Any]]) -> str:
         threat_count = sum(1 for r in results if r.get("severity") == "HIGH")
         
-        if label == "LOW":
+        if label == "SECURE":
             return "No significant threats detected. Systems appear secure."
         
         if label == "CRITICAL":

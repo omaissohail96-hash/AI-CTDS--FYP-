@@ -115,6 +115,60 @@ const SettingsPage = () => {
                             </table>
                         )}
                     </div>
+                    <div className="glass-card full-width" style={{ marginTop: '20px' }}>
+                        <h3>🔌 API Integration Guide</h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                            Integrate CyberGuard AI directly into your custom applications and automated security workflows.
+                        </p>
+
+                        <div className="integration-sections" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+                            <div className="guide-section">
+                                <h4>📧 Email Security (Python)</h4>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                                    Scan incoming mail for phishing and malicious payloads.
+                                </p>
+                                <pre className="code-block">
+                                    {`import requests
+
+API_URL = "http://localhost:8000/api/v1/agent/analyze"
+HEADERS = {"X-API-KEY": "YOUR_API_KEY"}
+
+payload = {
+    "type": "email",
+    "data": {
+        "subject": "Security Alert",
+        "body": "Your account has been compromise. Click here: http://evil.com"
+    }
+}
+
+response = requests.post(API_URL, json=payload, headers=HEADERS)
+print(response.json())`}
+                                </pre>
+                            </div>
+
+                            <div className="guide-section">
+                                <h4>🌐 Web Protection (JS/Fetch)</h4>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                                    Validate user links and form data in real-time.
+                                </p>
+                                <pre className="code-block">
+                                    {`const checkSecurity = async (url) => {
+  const response = await fetch('http://localhost:8000/api/v1/agent/analyze', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-KEY': 'YOUR_API_KEY'
+    },
+    body: JSON.stringify({ type: 'url', data: url })
+  });
+  
+  const result = await response.json();
+  console.log("Risk Score:", result.agent_verdict.score);
+};`}
+                                </pre>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -42,7 +42,7 @@ SEVERITY_MAP = {
     "PHISHING WEBSITE": "CRITICAL" # Higher severity for real phishing
 }
 
-def predict_url_phishing(feature_dict: dict):
+def predict_url_phishing(feature_dict: dict, url: str = ""):
     _load()
 
     # Ensure all features exist
@@ -54,8 +54,23 @@ def predict_url_phishing(feature_dict: dict):
     pred = _model.predict(df)[0]
     confidence = _model.predict_proba(df)[0].max()
 
-    # Mapping: 1 -> Legitimate, 0 -> Phishing
+    # Mapping: 1 -> Legitimate, 0 -> Phishing (default logic)
     label = "LEGITIMATE WEBSITE" if pred == 1 else "PHISHING WEBSITE"
+    
+    # Heuristic Overrides (Compensating for lack of live DNS/WHOIS data)
+    u_lower = url.lower()
+    
+    # 1. Known Safe Domains
+    if any(safe in u_lower for safe in ["google.com", "github.com", "microsoft.com", "apple.com"]):
+        label = "LEGITIMATE WEBSITE"
+        confidence = max(confidence, 0.98)
+        
+    # 2. Obvious Phishing Keywords (if not a known safe domain)
+    elif label == "LEGITIMATE WEBSITE" and confidence < 0.85:
+        suspicious_words = ["login", "verify", "update", "bank", "secure", "account", "confirm"]
+        if sum(1 for w in suspicious_words if w in u_lower) >= 2:
+            label = "PHISHING WEBSITE"
+            confidence = max(confidence, 0.95)
 
     return {
         "attack_type": label,

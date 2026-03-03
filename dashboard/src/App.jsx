@@ -7,15 +7,16 @@ import {
   EmailScannerPage,
   NetworkMonitorPage,
   WebAttackPage,
-  LoginPage, // New import
-  RegisterPage, // New import
-  SettingsPage // New import
+  LoginPage,
+  RegisterPage,
+  SettingsPage,
+  LandingPage
 } from './pages'
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
-  const [view, setView] = useState('login'); // login, register, app
+  const [view, setView] = useState('landing'); // landing, login, register, app
 
   const handleLogin = (token) => {
     localStorage.setItem('token', token); // Store token on successful login
@@ -34,7 +35,10 @@ function App() {
     if (view === 'register') {
       return <RegisterPage onLogin={handleLogin} onToggleForm={() => setView('login')} />;
     }
-    return <LoginPage onLogin={handleLogin} onToggleForm={() => setView('register')} />;
+    if (view === 'login') {
+      return <LoginPage onLogin={handleLogin} onToggleForm={() => setView('register')} />;
+    }
+    return <LandingPage onLogin={() => setView('login')} onRegister={() => setView('register')} />;
   }
 
   const renderContent = () => {
