@@ -49,15 +49,15 @@ npm run dev
 The system core relies on several specialized ML models. If the `models/` folder is empty, you must download the datasets and run the training scripts.
 
 ### 1. URL Phishing Detection
-- **Dataset**: [UCI Phishing Websites Dataset](https://archive.ics.uci.edu/ml/datasets/phishing+websites)
-- **File**: Place `Training Dataset.arff` in `datasets/urls/`
+- **Dataset**: [UCI Phishing Websites Dataset](https://drive.google.com/file/d/1hCyU6SVXC_GLD0lN__WIU6C0Cyt0Alwz/view?usp=sharing and https://drive.google.com/file/d/1IgKkoepmVODtIuG8BODJ7v-UVRfX0SSS/view?usp=sharing)
+- **File**: Place `Training Dataset.arff and .old.arff` in `datasets/urls/`
 - **Train**:
   ```powershell
   python train_url_model.py
   ```
 
 ### 2. Network Intrusion (IDS)
-- **Dataset**: [NSL-KDD](https://www.unb.ca/cic/datasets/nsl-kdd.html)
+- **Dataset**: [NSL-KDD](https://drive.google.com/file/d/1msm2Vy4ydLIzdpMwgtbGvV6F6GCkUM1P/view?usp=sharing and https://drive.google.com/file/d/1E8PKo5v6QNiMw7TNdVUInEnHagIoWQNT/view?usp=sharing)
 - **Files**: Place `Data.csv` and `label.csv` in `datasets/intrusion/`
 - **Train**:
   ```powershell
@@ -65,7 +65,12 @@ The system core relies on several specialized ML models. If the `models/` folder
   ```
 
 ### 3. Email Phishing/Spam
-- **Dataset**: Combined Enron & Ling-spam datasets.
+- **Dataset**: (https://drive.google.com/file/d/1kguN5G272BK6qQUworWdhUzOXINvdHnK/view?usp=sharing
+                https://drive.google.com/file/d/1Qfp1tP2Itu5gjZFYS4CHeODBYiPcfgDc/view?usp=sharing
+                https://drive.google.com/file/d/1MR1CeJzAlOTdpsFvW0YWKp1579-Ia1ph/view?usp=sharing
+                https://drive.google.com/file/d/1JbmhNRWPTViTv_G9wICld_I_ppOKwSrV/view?usp=sharing
+                https://drive.google.com/file/d/1UWal0wSEOnRSYrpEaeEigo9D0-hdG18B/view?usp=sharing
+                https://drive.google.com/file/d/1K63mUXjcJx1lNvHi4jK3WUiaCm--SPBk/view?usp=sharing)
 - **Files**: Place `.csv` files in `datasets/emails/`
 - **Train**:
   ```powershell
@@ -73,7 +78,8 @@ The system core relies on several specialized ML models. If the `models/` folder
   ```
 
 ### 4. Web Attack Detection (SQLi/XSS)
-- **Dataset**: Custom web request logs with malicious payloads.
+- **Dataset**: Custom web request logs with malicious payloads(https://drive.google.com/file/d/1va1eyehNRRIi2OcFlKG6UY24GxR70gB2/view?usp=sharing and 
+                https://drive.google.com/file/d/1njBX2qokk7e7-LCOlTYhL6SUCZo2IItj/view?usp=sharing).
 - **Files**: Place in `datasets/websites/`
 - **Train**:
   ```powershell
