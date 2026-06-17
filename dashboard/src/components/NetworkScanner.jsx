@@ -42,7 +42,7 @@ const NetworkScanner = () => {
         }
     };
 
-    const isSafe = result?.agent_verdict?.label?.toLowerCase() === 'secure';
+    const isSafe = result?.agent_verdict?.label?.toLowerCase() === 'safe';
 
     return (
         <div className="scanner-card fadeIn">

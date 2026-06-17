@@ -1,12 +1,13 @@
 from datetime import timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from src.api import deps
 from src.core import security
 from src.core.config import settings
 from src.models.models import User, Workspace
+from src.services.user_behavior_analytics import UserBehaviorAnalyticsService
 from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
@@ -24,6 +25,7 @@ class Token(BaseModel):
 @router.post("/register", response_model=Token)
 def register_user(
     *,
+    request: Request,
     db: Session = Depends(deps.get_db),
     user_in: UserRegister
 ) -> Any:
@@ -66,6 +68,17 @@ def register_user(
         user_id=new_user.id,
         metadata={"email": new_user.email}
     )
+    try:
+        UserBehaviorAnalyticsService.record_event(
+            db=db,
+            workspace_id=new_workspace.id,
+            user_id=new_user.id,
+            event_type="user_registered",
+            ip_address=request.client.host if request.client else None,
+            endpoint_accessed=str(request.url.path),
+        )
+    except Exception as exc:
+        print(f"UBA registration telemetry failed: {exc}")
 
     return {
         "access_token": security.create_access_token(
@@ -76,6 +89,7 @@ def register_user(
 
 @router.post("/login/access-token", response_model=Token)
 def login_access_token(
+    request: Request,
     db: Session = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
     """
@@ -83,6 +97,18 @@ def login_access_token(
     """
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not security.verify_password(form_data.password, user.hashed_password):
+        if user:
+            try:
+                UserBehaviorAnalyticsService.record_event(
+                    db=db,
+                    workspace_id=user.workspace_id,
+                    user_id=user.id,
+                    event_type="login_failed",
+                    ip_address=request.client.host if request.client else None,
+                    endpoint_accessed=str(request.url.path),
+                )
+            except Exception as exc:
+                print(f"UBA failed-login telemetry failed: {exc}")
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
@@ -97,6 +123,17 @@ def login_access_token(
         workspace_id=user.workspace_id,
         user_id=user.id
     )
+    try:
+        UserBehaviorAnalyticsService.record_event(
+            db=db,
+            workspace_id=user.workspace_id,
+            user_id=user.id,
+            event_type="login_success",
+            ip_address=request.client.host if request.client else None,
+            endpoint_accessed=str(request.url.path),
+        )
+    except Exception as exc:
+        print(f"UBA login telemetry failed: {exc}")
 
     return {
         "access_token": security.create_access_token(

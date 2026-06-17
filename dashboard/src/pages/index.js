@@ -7,3 +7,7 @@ export { default as LandingPage } from './LandingPage';
 export { default as LoginPage } from './LoginPage';
 export { default as RegisterPage } from './RegisterPage';
 export { default as SettingsPage } from './SettingsPage';
+export { default as AlertsPage } from './AlertsPage';
+export { default as PreventionCenter } from './PreventionCenter';
+export { default as ThreatHuntingPage } from './ThreatHuntingPage';
+export { default as UserBehaviorAnalyticsPage } from './UserBehaviorAnalyticsPage';

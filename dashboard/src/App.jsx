@@ -10,7 +10,11 @@ import {
   LoginPage,
   RegisterPage,
   SettingsPage,
-  LandingPage
+  LandingPage,
+  AlertsPage,
+  PreventionCenter,
+  ThreatHuntingPage,
+  UserBehaviorAnalyticsPage
 } from './pages'
 
 function App() {
@@ -45,6 +49,14 @@ function App() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardPage />;
+      case 'alerts':
+        return <AlertsPage />;
+      case 'prevention':
+        return <PreventionCenter />;
+      case 'hunting':
+        return <ThreatHuntingPage />;
+      case 'uba':
+        return <UserBehaviorAnalyticsPage />;
       case 'url':
         return <URLScannerPage />;
       case 'email':

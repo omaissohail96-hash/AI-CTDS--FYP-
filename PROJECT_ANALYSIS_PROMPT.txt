@@ -1,0 +1,86 @@
+You are an expert security architect, principal software engineer, and AI/ML model consultant. I want you to perform a comprehensive code review, architectural critique, and design analysis of my Final Year Project, "CyberGuard AI: Multi-Vector Threat Detection & Intrusion Prevention SaaS Platform."
+
+Here is the complete reference map, database schema, workflow description, and component specifications of the project. Please read it carefully and answer the questions at the end.
+
+---
+
+# 🛡️ PROJECT OVERVIEW & GOALS
+CyberGuard AI is a multi-vector threat detection and real-time prevention platform designed for enterprise threat monitoring. It ingests URLs, Emails, Network logs, and Web application requests, classifies them using trained machine learning classifiers, enriches them with threat intelligence, and correlates attacks to dynamically adjust risk scores. It includes an active Intrusion Prevention System (IPS) that blocks malicious entities at the middleware layer (403 Forbidden) and runs automated cleanups. It also tracks user activities using User Behavior Analytics (UBA) to detect anomalies (like Impossible Travel or API spikes).
+
+---
+
+# 🏗️ SYSTEM ARCHITECTURE & COMPONENTS
+
+1. FRONTEND: React (Vite) styled with Vanilla CSS Glassmorphism. Features dynamic dashboards, scanner sections, user behavior analytics charts (recharts), threat timelines, alert panels, and a threat prevention center (active block lists, unblock history).
+2. BACKEND API: FastAPI (Python 3.11+) + SQLAlchemy ORM + SQLite database. Integrated with JWT auth and multi-tenant workspace isolation.
+3. MIDDLEWARE LAYER:
+   - AuditMiddleware: Automatically intercepts mutations (POST, DELETE) and logs administrative events for SOC-2 audit compliance.
+   - PreventionMiddleware: Extracts client IP, queries active blocklists, and blocks requests with 403 Forbidden if blocked.
+4. AI AGENT ORCHESTRATOR (SecurityAgent): Coordinates vector scans using Python's asyncio to process classifications in parallel. Normalizes outputs and calculates unified threat risk scores (0-100).
+5. MACHINE LEARNING DETECTORS:
+   - URL Scanner: Random Forest model extracting lexical features to flag phishing URLs.
+   - Email Scanner: NLP Naive Bayes + TF-IDF vectorizer classifying phishing emails.
+   - Network IDS: Random Forest classifier built on NSL-KDD dataset to flag network traffic anomalies.
+   - Web Attack Scanner: Custom classifier detecting SQLi and XSS payloads.
+6. THREAT INTELLIGENCE: TTL-cached lookups matching domain and IP indicators against cached threat blacklists.
+7. CORRELATION ENGINE: Evaluates occurrences of the same indicators across multiple vectors within a 24-hour window, applying scoring multipliers.
+8. INTENSE ALERT SYSTEM: Escalates severity (LOW, MEDIUM, HIGH, CRITICAL) when intelligence hits or repeated patterns occur, employing a 60-minute duplicate cooldown. Connects to webhooks and SMTP email templates.
+9. INTRA-SYSTEM SCHEDULER: Background cron scheduler running cleanup loops every 5 minutes to release expired blocked IPs.
+10. USER BEHAVIOR ANALYTICS (UBA): Builds a 30-day baseline profile of IPs, login hours, and locations per user. Scores events and alerts on anomalies (Impossible travel speed > 900 km/h, credential brute-forcing, API access spikes).
+11. EXPLAINABILITY & MITRE ATT&CK: Static mapping pipeline linking classifications to MITRE ATT&CK technique IDs (T1566 Phishing, T1190 Web Exploits, etc.) and generating text explanations with recommended analyst actions.
+12. EXECUTIVE PDF GENERATOR: Custom dependency-free PDF layout builder generating assessment reports.
+
+---
+
+# 🗄️ DATABASE SCHEMA REFERENCE (SQLAlchemy Models)
+
+The system manages data across 11 tables:
+1. Workspace: id (UUID), name, tier, monthly_quota, rate_limit_rpm, created_at.
+2. User: id (UUID), workspace_id (FK), email, hashed_password, full_name, role (admin/developer/viewer), is_active, created_at.
+3. APIKey: id (UUID), workspace_id (FK), key_hash (SHA-256), label, is_active, created_at, last_used.
+4. ScanHistory: id (UUID), workspace_id (FK), user_id (FK), input_type (url/email/network/web), entity (indexed IP/domain/sender), entities (JSON list), attack_type, severity, ml_confidence, intelligence_hit (bool), correlation_hit (bool), prevention_triggered (bool), risk_score, verdict, explanation (JSON), mitre_mappings (JSON), details (JSON), created_at.
+5. AuditLog: id (UUID), workspace_id (FK), user_id (FK), action, module, status, event_metadata (JSON), created_at.
+6. UserBehaviorProfile: id (UUID), workspace_id (FK), user_id (FK), average_daily_logins, average_api_calls, common_ip_addresses (JSON), common_locations (JSON), common_login_hours (JSON), baseline_risk_score, created_at, updated_at.
+7. UserBehaviorEvent: id (UUID), workspace_id (FK), user_id (FK), event_type, ip_address, location, endpoint_accessed, timestamp, anomaly_score, risk_level, explanation (JSON).
+8. ThreatIntel: id (UUID), entity_value, entity_type, threat_type, risk_level, source, last_synced, is_active.
+9. Alert: id (UUID), workspace_id (FK), user_id (FK), scan_history_id (FK), alert_type, severity, title, description, entity, entity_type, source_vector, risk_score, ml_confidence, indicators (JSON), correlated_events, recommended_action, resolved_status, resolved_at, resolved_by (FK), resolution_notes, notification_sent, email_sent, webhook_sent, created_at, updated_at.
+10. AlertHistory: id (UUID), alert_id (FK), workspace_id (FK), user_id (FK), action, previous_severity, new_severity, notes, created_at.
+11. BlockedEntity: id (UUID), workspace_id (FK), entity (IP/URL/Domain), entity_type, severity, reason, blocked_until, auto_generated (bool), resolved_status (bool), prevention_reason, related_alert_id (FK), related_scan_id (FK), blocked_request_count, created_at, created_by (FK), unblocked_at, unblocked_by (FK).
+
+---
+
+# 🔌 API GATEWAY ENDPOINT SCHEMAS
+
+- AUTH: POST `/api/v1/auth/register` | POST `/api/v1/auth/token` | GET `/api/v1/auth/me`
+- WORKSPACE: GET `/api/v1/workspace` | POST `/api/v1/workspace/api-keys` | DELETE `/api/v1/workspace/api-keys/{id}`
+- DETECTOR AGENT: POST `/api/v1/agent/analyze` (Runs parallel ML scanners + threat intelligence lookup + correlation engine score boost + automated IPS check + UBA recording + audit trace)
+- STATS: GET `/api/v1/stats/threat-summary?hours={h}` | GET `/api/v1/stats/recent-scans` | GET `/api/v1/stats/threat-distribution?hours={h}`
+- ALERTS: GET `/api/v1/alerts` | GET `/api/v1/alerts/recent` | GET `/api/v1/alerts/critical` | POST `/api/v1/alerts/{id}/resolve` | POST `/api/v1/alerts/{id}/escalate` | GET `/api/v1/alerts/stats`
+- PREVENTION (IPS): GET `/api/v1/prevention/blocked` | GET `/api/v1/prevention/stats` | POST `/api/v1/prevention/unblock/{id}` | GET `/api/v1/prevention/history` | GET `/api/v1/prevention/reasoning/{id}`
+- UBA: GET `/api/v1/uba/stats` | GET `/api/v1/uba/profiles` | GET `/api/v1/uba/user/{id}` | GET `/api/v1/uba/events`
+- REPORTS: GET `/api/v1/reports/security-report?hours={h}` (Generates dynamic PDF report)
+
+---
+
+# 📂 DIRECTORY STRUCTURE
+
+- `/src/api/v1/` : Route files (auth.py, agent.py, alerts.py, prevention.py, uba.py, reports.py, etc.)
+- `/src/api/middleware.py` : Intercepts blocking requests (IPS) and logs compliance actions.
+- `/src/agent/orchestrator.py` : Handles payload analysis coordination and scoring.
+- `/src/services/` : Core engines (alert_service.py, prevention_engine.py, user_behavior_analytics.py, pdf_report_service.py, mitre_mapping_service.py, threat_explanation_service.py, threat_intel.py).
+- `/src/models/models.py` : Database mappings.
+- `/src/utils/prevention_scheduler.py` : Runs background task threads.
+- `/dashboard/src/pages/` : React UI dashboards (DashboardPage.jsx, PreventionCenter.jsx, UserBehaviorAnalyticsPage.jsx, AlertsPage.jsx, ThreatHuntingPage.jsx, settings, auth).
+- `/dashboard/src/components/` : Reusable visual widgets.
+- `/models/` : Serialized ML models (`.pkl`).
+
+---
+
+# 🔬 YOUR TASK: ANALYSIS & CRITIQUE
+
+Now, based on this system description, please perform the following:
+
+1. **Architectural Evaluation**: Critically assess the "Modular Monolith" architecture of CyberGuard AI. Is the combination of an observer (IDS) and an active blocker (IPS middleware) robust? How does storing UBA profiles, active blocks, and scan history in the same database affect scalability, and what architecture patterns would you recommend to scale this system to handle 10,000 requests per second?
+2. **Security & Vulnerability Assessment**: Inspect the middleware-level blocking (PreventionMiddleware) and audit trail logging. Are there potential bypass scenarios (e.g. proxy header spoofing, database latency denial-of-service, race conditions in active block expiration)?
+3. **ML Classifier & Scoring Critique**: The Scoring Engine normalizes scores into a unified 0-100 rating using model confidence, threat intel weight, and correlation boost multipliers. What are the math limitations of a weighted-max scoring system? How would you handle false positives when combining standard ML classifiers (Random Forest, NLP Naive Bayes) with automated active prevention (blocking)?
+4. **Actionable Roadmap**: Suggest 3 high-impact security integrations or code optimizations (e.g., caching layers, rate-limit optimizations, background queue workers like Celery/Redis) that I can present to academic/examiner panels.

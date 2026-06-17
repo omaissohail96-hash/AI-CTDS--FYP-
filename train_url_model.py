@@ -51,7 +51,7 @@ print("Accuracy:", accuracy_score(y_test, y_pred))
 print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
 # ---------- SAVE ----------
-#joblib.dump(model, "models/url_phishing_model.pkl", compress=3)
-#joblib.dump(X.columns.tolist(), "models/url_features.pkl")
+joblib.dump(model, "models/url_phishing_model.pkl", compress=3)
+joblib.dump(X.columns.tolist(), "models/url_features.pkl")
 
 print("\nURL phishing model saved successfully.")

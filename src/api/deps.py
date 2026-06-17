@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
@@ -6,9 +7,13 @@ from jose import jwt, JWTError
 from src.core.config import settings
 from src.core.database import SessionLocal
 from src.models.models import User, APIKey, Workspace
+from src.services.user_behavior_analytics import UserBehaviorAnalyticsService
 import uuid
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login/access-token")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/login/access-token",
+    auto_error=False,
+)
 api_key_header = APIKeyHeader(name="X-API-KEY", auto_error=False)
 
 def get_db() -> Generator:
@@ -20,7 +25,10 @@ def get_db() -> Generator:
 
 async def get_current_user(
     db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
-) -> User:
+) -> Optional[User]:
+    if not token:
+        return None
+
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=["HS256"]
@@ -72,6 +80,18 @@ async def get_current_workspace(
         
         # Update last used timestamp (Fire and forget style)
         key_entry.last_used = datetime.utcnow()
+        try:
+            UserBehaviorAnalyticsService.record_event(
+                db=db,
+                workspace_id=key_entry.workspace_id,
+                user_id=None,
+                event_type="api_key_usage",
+                endpoint_accessed="workspace_auth",
+                metadata={"api_key_label": key_entry.label},
+                commit=False,
+            )
+        except Exception as exc:
+            print(f"UBA API-key telemetry failed: {exc}")
         db.commit()
         
         workspace = db.query(Workspace).filter(Workspace.id == key_entry.workspace_id).first()

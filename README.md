@@ -1,176 +1,166 @@
-# 🛡️ CyberGuard AI: Multi-Vector Threat Detection SaaS
+# 🛡️ CyberGuard AI: Multi-Vector Threat Detection & Intrusion Prevention SaaS
 
-CyberGuard AI is an enterprise-grade security platform that leverages machine learning to detect and correlate threats across multiple attack vectors, including URLs, Emails, Network Traffic, and Web Applications.
+CyberGuard AI is a production-grade, enterprise-ready cybersecurity SaaS platform. It leverages machine learning to classify threats across multiple attack vectors (URLs, Emails, Network Intrusion, Web Requests) and couples active threat intelligence with automated real-time Intrusion Prevention (IPS) and User Behavior Analytics (UBA).
 
-![CyberGuard Banner](https://img.shields.io/badge/Security-AI--Powered-blueviolet?style=for-the-badge&logo=shield)
+![Security Banner](https://img.shields.io/badge/Security-AI--Powered-blueviolet?style=for-the-badge&logo=shield)
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi)
 ![React](https://img.shields.io/badge/Frontend-React-61DAFB?style=for-the-badge&logo=react)
+![SQLAlchemy](https://img.shields.io/badge/Database-SQLAlchemy-red?style=for-the-badge&logo=sqlite)
+
+---
+
+## 🚀 Key Platform Capabilities
+
+*   **🧠 Asynchronous Security Orchestration**: Evaluates multi-vector payloads in parallel using python's `asyncio` for extremely low latency.
+*   **🔌 Active Intrusion Prevention (IPS)**: Middleware intercepts client traffic and returns `403 Forbidden` for blocked entities. Expired blocks are cleared automatically by a background cron scheduler.
+*   **📊 User Behavior Analytics (UBA)**: Tracks IP logins, triggers travel alerts if geography jumps imply speeds `> 900 km/h` (Impossible Travel), monitors api usage spikes, and tracks credential brute-force attempts.
+*   **🔔 Real-Time Alert Escalation & Notification**: Translates detections into enterprise alerts. Alerts auto-escalate when intelligence checks trigger or when identical anomalies hit within 24 hours. Connects to SIEM tools via outbound webhooks and sends HTML emails to analysts.
+*   **📑 Audit Trail Compliance**: Auto-logs every state mutation (API Key generation, unblocking actions) in a secure audit table to satisfy SOC-2 criteria.
+*   **📈 Glassmorphism Portal**: Premium dashboard with live alert feeds, threat map visualization, mitigation playbooks, and one-click unblocking controls.
+*   **📄 Executive PDF Reporting**: Dependency-free PDF builder compiling security metrics and trend analysis for stakeholder reviews.
+
+---
+
+## 🛠️ Project Directory Structure
+
+```text
+Final_Year_Project/
+├── src/
+│   ├── agent/               # Orchestrator & Scoring engine
+│   ├── api/                 # API Routes & Custom middleware
+│   │   ├── middleware.py    # IPS blocking & Compliance Audit Logging
+│   │   └── v1/              # Endpoint modules (Alerts, IPS, UBA, MITRE)
+│   ├── core/                # DB setup & Configuration settings
+│   ├── detectors/           # ML Feature Extractors and pickle wrappers
+│   ├── models/              # SQLAlchemy Database Models (11 Tables)
+│   ├── services/            # Deep business logic (UBA, PDF, IPS, Alerts, MITRE)
+│   └── utils/               # Scheduler & Scoring utilities
+├── dashboard/               # Vite React UI Portal
+│   ├── src/
+│   │   ├── components/      # UI widgets (Alert panel, Scanners, Timeline)
+│   │   └── pages/           # Full views (Threat Prevention, UBA, Hunt Center)
+├── models/                  # Serialized Scikit-Learn Classifiers (.pkl)
+├── datasets/                # Training raw dataset directory
+├── SYSTEM_MANUAL.md         # Detailed system design & DB schema reference
+└── README.md                # You are here
+```
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Requirements
-- Python 3.11+
-- Node.js 18+
-- SQLite (Local development) or PostgreSQL (Production)
+### 1. Prerequisites
+*   Python 3.11+
+*   Node.js 18+
 
-### 2. Installation
+### 2. Environment Setup
 ```powershell
 # Clone the repository
 git clone <your-repo-url>
 cd Final_Year_Project
 
-# Setup Backend
+# Create python virtual environment
+python -m venv venv
+.\venv\Scripts\activate
+
+# Install Backend Dependencies
 pip install -r requirements.txt
 
-# Setup Frontend
+# Install Frontend Dependencies
 cd dashboard
 npm install
+cd ..
 ```
 
-### 3. Running the App
-**Start Backend:**
+### 3. Training & Preparing ML Models
+If the `/models/` directory is empty, download the datasets and run the training scripts:
+
+#### A. URL Phishing Detection
+*   **Datasets**: [Part 1](https://drive.google.com/file/d/1hCyU6SVXC_GLD0lN__WIU6C0Cyt0Alwz/view?usp=sharing) | [Part 2](https://drive.google.com/file/d/1IgKkoepmVODtIuG8BODJ7v-UVRfX0SSS/view?usp=sharing)
+*   **Path**: Place `Training Dataset.arff` and `Training Dataset.old.arff` in `datasets/urls/`
+*   **Train**: `python train_url_model.py`
+
+#### B. Network Intrusion (IDS)
+*   **Datasets**: [Data.csv](https://drive.google.com/file/d/1msm2Vy4ydLIzdpMwgtbGvV6F6GCkUM1P/view?usp=sharing) | [Label.csv](https://drive.google.com/file/d/1E8PKo5v6QNiMw7TNdVUInEnHagIoWQNT/view?usp=sharing)
+*   **Path**: Place in `datasets/intrusion/`
+*   **Train**: `python train_network_ids.py`
+
+#### C. Email Phishing/Spam
+*   **Datasets**: [CSV Part 1](https://drive.google.com/file/d/1kguN5G272BK6qQUworWdhUzOXINvdHnK/view?usp=sharing) | [Part 2](https://drive.google.com/file/d/1Qfp1tP2Itu5gjZFYS4CHeODBYiPcfgDc/view?usp=sharing) | [Part 3](https://drive.google.com/file/d/1MR1CeJzAlOTdpsFvW0YWKp1579-Ia1ph/view?usp=sharing) | [Part 4](https://drive.google.com/file/d/1JbmhNRWPTViTv_G9wICld_I_ppOKwSrV/view?usp=sharing) | [Part 5](https://drive.google.com/file/d/1UWal0wSEOnRSYrpEaeEigo9D0-hdG18B/view?usp=sharing) | [Part 6](https://drive.google.com/file/d/1K63mUXjcJx1lNvHi4jK3WUiaCm--SPBk/view?usp=sharing)
+*   **Path**: Place all `.csv` files in `datasets/emails/`
+*   **Train**: `python merge_and_train_email_model.py`
+
+#### D. Web Attack Detection (SQLi/XSS)
+*   **Datasets**: [SQL Payload](https://drive.google.com/file/d/1va1eyehNRRIi2OcFlKG6UY24GxR70gB2/view?usp=sharing) | [XSS Payload](https://drive.google.com/file/d/1njBX2qokk7e7-LCOlTYhL6SUCZo2IItj/view?usp=sharing)
+*   **Path**: Place in `datasets/websites/`
+*   **Train**: `python train_web_attack_model.py`
+
+---
+
+## 🏃 Running the Application
+
+### 1. Database Initialization & Seeding
+Prepare and seed threat intelligence lists and mockup records:
 ```powershell
-# From project root
-$env:PYTHONPATH="."
-uvicorn src.main:app --reload
+python seed_test_data.py
 ```
-**Start Frontend:**
+
+### 2. Start the Backend API
 ```powershell
-# From /dashboard
+$env:PYTHONPATH="."
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+```
+*   *Note*: Interactive Swagger UI documentation is available at `http://localhost:8000/docs`.
+
+### 3. Start the React Frontend Dashboard
+```powershell
+cd dashboard
 npm run dev
 ```
+Open `http://localhost:5173` to access the CyberGuard dashboard.
 
 ---
 
-## 📊 Datasets & Model Training
+## 🔐 Credentials (Demo)
 
-The system core relies on several specialized ML models. If the `models/` folder is empty, you must download the datasets and run the training scripts.
-
-### 1. URL Phishing Detection
-- **Dataset**: [UCI Phishing Websites Dataset](https://drive.google.com/file/d/1hCyU6SVXC_GLD0lN__WIU6C0Cyt0Alwz/view?usp=sharing and https://drive.google.com/file/d/1IgKkoepmVODtIuG8BODJ7v-UVRfX0SSS/view?usp=sharing)
-- **File**: Place `Training Dataset.arff and .old.arff` in `datasets/urls/`
-- **Train**:
-  ```powershell
-  python train_url_model.py
-  ```
-
-### 2. Network Intrusion (IDS)
-- **Dataset**: [NSL-KDD](https://drive.google.com/file/d/1msm2Vy4ydLIzdpMwgtbGvV6F6GCkUM1P/view?usp=sharing and https://drive.google.com/file/d/1E8PKo5v6QNiMw7TNdVUInEnHagIoWQNT/view?usp=sharing)
-- **Files**: Place `Data.csv` and `label.csv` in `datasets/intrusion/`
-- **Train**:
-  ```powershell
-  python train_network_ids.py
-  ```
-
-### 3. Email Phishing/Spam
-- **Dataset**: (https://drive.google.com/file/d/1kguN5G272BK6qQUworWdhUzOXINvdHnK/view?usp=sharing
-                https://drive.google.com/file/d/1Qfp1tP2Itu5gjZFYS4CHeODBYiPcfgDc/view?usp=sharing
-                https://drive.google.com/file/d/1MR1CeJzAlOTdpsFvW0YWKp1579-Ia1ph/view?usp=sharing
-                https://drive.google.com/file/d/1JbmhNRWPTViTv_G9wICld_I_ppOKwSrV/view?usp=sharing
-                https://drive.google.com/file/d/1UWal0wSEOnRSYrpEaeEigo9D0-hdG18B/view?usp=sharing
-                https://drive.google.com/file/d/1K63mUXjcJx1lNvHi4jK3WUiaCm--SPBk/view?usp=sharing)
-- **Files**: Place `.csv` files in `datasets/emails/`
-- **Train**:
-  ```powershell
-  python merge_and_train_email_model.py
-  ```
-
-### 4. Web Attack Detection (SQLi/XSS)
-- **Dataset**: Custom web request logs with malicious payloads(https://drive.google.com/file/d/1va1eyehNRRIi2OcFlKG6UY24GxR70gB2/view?usp=sharing and 
-                https://drive.google.com/file/d/1njBX2qokk7e7-LCOlTYhL6SUCZo2IItj/view?usp=sharing).
-- **Files**: Place in `datasets/websites/`
-- **Train**:
-  ```powershell
-  python train_web_attack_model.py
-  ```
+Use these credentials to log in to the administrative portal during demos:
+*   **User**: `test@cyberguard.ai`
+*   **Password**: `TestPassword123!`
 
 ---
 
-## 🧠 System Intelligence
+## 🔌 API Integration Quick Example
 
-### Cross-Vector Correlation
-The **Correlation Engine** tracks entities (IPs, Domains) across different scans. If a malicious domain appears in both an email and a URL scan within 24 hours, the risk score is automatically boosted.
+Incorporate CyberGuard's automated scanning in third-party services:
 
-### Threat Intelligence
-The platform includes a local **ThreatIntel** service that checks every scan against a high-speed cached blacklist of known malicious entities.
-
-### Audit Logging
-Enterprise compliance is maintained via a global **Audit Middleware** that records every security-sensitive mutation in the system.
-
----
-
-## 🔌 API Integration Guide
-
-CyberGuard AI is built for seamless, headless integration. You can generate API keys in the **Settings** tab of the Dashboard to protect your own business workflows.
-
-### 1. Authentication
-All API requests must include your API key in the `X-API-KEY` header.
-- **Header**: `X-API-KEY: your_generated_key_here`
-
-### 2. Integration Scenarios
-
-#### 📧 Email Protection (Python Example)
-Scan incoming email content for phishing before it results in a user breach.
-```python
-import requests
-
-API_URL = "http://localhost:8000/api/v1/agent/analyze"
-HEADERS = {"X-API-KEY": "cg_live_xxxxxx"}
-
-payload = {
-    "type": "email",
-    "data": {
-        "subject": "Urgent Action Required",
-        "body": "Your bank account has been locked. Verify here: http://evil-phishing.com"
-    }
-}
-
-response = requests.post(API_URL, json=payload, headers=HEADERS)
-verdict = response.json()["agent_verdict"]
-
-if verdict["label"] == "CRITICAL":
-    print(f"🚨 BLOCKED: {verdict['summary']}")
-```
-
-#### 🌐 Website Security (JavaScript/Fetch)
-Validate user-submitted URLs or comments in real-time to prevent malicious links.
+### Phishing URL Check (JavaScript)
 ```javascript
-const sanitizeInput = async (userInput) => {
-  const response = await fetch('http://localhost:8000/api/v1/agent/analyze', {
+const scanURL = async (target) => {
+  const res = await fetch('http://localhost:8000/api/v1/agent/analyze', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-API-KEY': 'cg_live_xxxxxx'
+      'X-API-KEY': 'cg_live_xxxxxx' // Retrieve from Settings Tab
     },
-    body: JSON.stringify({ type: 'url', data: userInput })
+    body: JSON.stringify({ type: 'url', data: target })
   });
   
-  const result = await response.json();
+  const result = await res.json();
   if (result.agent_verdict.score > 80) {
-    console.error("⚠️ Malicious entity detected. Blocking request.");
-    return false;
+    console.warn("⚠️ Malicious domain block triggered:", result.agent_verdict.summary);
   }
-  return true;
 };
 ```
 
 ---
 
-## 🛠️ Project Structure
-- `/src/api/v1/`: API endpoints (Auth, Agent, Workspace).
-- `/src/agent/`: AI Orchestrator logic.
-- `/src/services/`: Intelligence and Detection services.
-- `/detectors/`: Feature extractors and model wrappers.
-- `/models/`: Serialized ML models (`.pkl`).
-- `/dashboard/`: React frontend application.
+## 📚 Reference Documentation
 
----
-
-## 🔐 Credentials (Demo)
-- **User**: `test@cyberguard.ai`
-- **Password**: `TestPassword123!`
+For more granular specifications on specific subsystems, view the following resources:
+*   [System Manual](file:///c:/Users/Farooq/Desktop/Final_Year_Project/SYSTEM_MANUAL.md): Full database schema configurations, orchestrator maps, and class workflows.
+*   [Alert Documentation](file:///c:/Users/Farooq/Desktop/Final_Year_Project/ALERT_SYSTEM_DOCUMENTATION.md): Real-time alert lifecycle details, parameters, and SIEM webhooks.
+*   [IPS Documentation](file:///c:/Users/Farooq/Desktop/Final_Year_Project/IPS_SYSTEM_DOCUMENTATION.md): Block thresholds, middleware logic, and unblock commands.
+*   [IPS Deployment Guide](file:///c:/Users/Farooq/Desktop/Final_Year_Project/IPS_DEPLOYMENT_GUIDE.md): Production checklist for high-speed traffic filtering.
 
 ---
 🛡️ *Developed as Final Year Project - Enterprise Intelligence Edition*

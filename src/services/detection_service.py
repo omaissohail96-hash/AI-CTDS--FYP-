@@ -4,6 +4,10 @@ from detectors.url_detector import predict_url_phishing
 from detectors.email_detector import predict_email_attack
 from detectors.network_detectors import predict_network_attacks
 from detectors.web_detector import predict_web_attack
+from sqlalchemy.orm import Session
+
+from src.models.models import Workspace
+from src.services.network_defense import NetworkDefenseService
 
 class DetectionService:
     """
@@ -29,9 +33,22 @@ class DetectionService:
         return res
 
     @staticmethod
-    def analyze_network(flow_features: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_network(
+        flow_features: Dict[str, Any],
+        db: Session | None = None,
+        workspace: Workspace | None = None,
+    ) -> Dict[str, Any]:
         res = predict_network_attacks(flow_features)
         res["vector"] = "NETWORK"
+        if db and workspace:
+            prevention = NetworkDefenseService.evaluate_flow(db, workspace, flow_features)
+            res.setdefault("metadata", {})
+            res["metadata"]["prevention"] = prevention
+            if prevention["anomaly_score"] >= 45:
+                res["severity"] = "CRITICAL" if prevention["severity"] == "CRITICAL" else "HIGH"
+                res["confidence"] = max(float(res.get("confidence", 0)), float(prevention["anomaly_score"]))
+                if res["attack_type"] == "NORMAL TRAFFIC":
+                    res["attack_type"] = "NETWORK ANOMALY"
         return res
 
     @staticmethod

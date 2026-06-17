@@ -6,41 +6,92 @@ from src.models.models import ScanHistory
 
 class CorrelationEngine:
     @staticmethod
-    def find_patterns(db: Session, workspace_id: uuid.UUID, entity: str) -> Dict[str, Any]:
-        """
-        Searches for the same entity across different vectors in the last 24 hours.
-        """
+    def extract_entities(input_type: str, payload: Any) -> List[str]:
         from src.services.threat_intel import ThreatIntelService
-        normalized_entity = ThreatIntelService.normalize_entity(entity)
+
+        entities = ThreatIntelService.extract_entities(payload)
+        if input_type == "network" and isinstance(payload, dict):
+            for key in ("Source IP", "Destination IP", "src_ip", "dst_ip", "ip", "host", "domain"):
+                value = payload.get(key)
+                if value:
+                    entities.extend(ThreatIntelService.extract_entities(str(value)))
+
+        deduped = sorted({entity for entity in entities if entity})
+        return deduped
+
+    @staticmethod
+    def primary_entity(entities: List[str], fallback: str = "") -> str:
+        if entities:
+            for entity in entities:
+                if "://" not in entity:
+                    return entity
+            return entities[0]
+        return fallback
+
+    @staticmethod
+    def find_patterns(
+        db: Session,
+        workspace_id: uuid.UUID,
+        input_type: str,
+        payload: Any,
+        entities: List[str] | None = None,
+    ) -> Dict[str, Any]:
+        """
+        Looks for repeated entities and cross-vector overlap in the last 24 hours.
+        """
+        entities = entities or CorrelationEngine.extract_entities(input_type, payload)
+        normalized_entities = {entity.lower() for entity in entities}
         
         time_window = datetime.utcnow() - timedelta(hours=24)
-        
-        # Find other scans in the same workspace with this entity mentioned in details
-        # Entity could be in URL, Email content, or IP fields.
         previous_scans = db.query(ScanHistory).filter(
             ScanHistory.workspace_id == workspace_id,
-            ScanHistory.entity == normalized_entity,
             ScanHistory.created_at > time_window
         ).all()
         
         correlated_events = []
+        rules_triggered = set()
+        repeated_entities = set()
+
         for scan in previous_scans:
-            # ONLY consider previous scans as threats if they were actually high/critical risk
+            historical_entities = {
+                entity.lower() for entity in (scan.entities or [])
+            }
+            overlapping = normalized_entities.intersection(historical_entities)
+            if not overlapping:
+                continue
+
+            repeated_entities.update(overlapping)
             if scan.risk_score > 60:
                 correlated_events.append({
                     "scan_id": str(scan.id),
                     "vector": scan.input_type,
                     "risk_score": scan.risk_score,
-                    "created_at": scan.created_at.isoformat()
+                    "created_at": scan.created_at.isoformat(),
+                    "overlapping_entities": sorted(overlapping),
+                    "attack_type": scan.attack_type,
                 })
+
+            if input_type == "email" and scan.input_type == "url":
+                rules_triggered.add("email_contains_previously_flagged_url")
+            elif input_type == "network" and scan.input_type in {"url", "web"}:
+                rules_triggered.add("network_ip_matches_malicious_entity")
+            elif input_type != scan.input_type:
+                rules_triggered.add("cross_vector_repeat")
+            else:
+                rules_triggered.add("repeated_entity_24h")
         
-        if len(correlated_events) > 0:
+        if correlated_events:
+            boost_factor = 1.15
+            if rules_triggered.intersection({"email_contains_previously_flagged_url", "network_ip_matches_malicious_entity"}):
+                boost_factor = 1.3
             return {
                 "detected": True,
-                "pattern": "RECURRING_ENTITY_THREAT",
+                "pattern": "CROSS_VECTOR_ENTITY_CORRELATION",
                 "evidence_count": len(correlated_events),
+                "entities": sorted(repeated_entities),
+                "rules_triggered": sorted(rules_triggered),
                 "events": correlated_events,
-                "boost_factor": 1.2 # Increases risk score by 20%
+                "boost_factor": boost_factor,
             }
         
         return {"detected": False}

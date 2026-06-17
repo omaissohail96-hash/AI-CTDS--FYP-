@@ -1,8 +1,12 @@
-import { LayoutDashboard, Globe, Mail, Activity, ShieldAlert, Settings, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, Globe, Mail, Activity, ShieldAlert, Settings, LogOut, Shield, AlertCircle, Lock, Search, BrainCircuit } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
     const menuItems = [
         { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+        { id: 'alerts', label: 'Alerts', icon: AlertCircle },
+        { id: 'hunting', label: 'Threat Hunting', icon: Search },
+        { id: 'uba', label: 'User Behavior', icon: BrainCircuit },
+        { id: 'prevention', label: 'Prevention Center', icon: Lock },
         { id: 'url', label: 'URL Scanner', icon: Globe },
         { id: 'email', label: 'Email Scan', icon: Mail },
         { id: 'network', label: 'Network IDS', icon: Activity },
