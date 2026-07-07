@@ -14,7 +14,9 @@ import {
   AlertsPage,
   PreventionCenter,
   ThreatHuntingPage,
-  UserBehaviorAnalyticsPage
+  UserBehaviorAnalyticsPage,
+  SystemHealthPage,
+  ReviewQueuePage
 } from './pages'
 
 function App() {
@@ -49,6 +51,10 @@ function App() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardPage />;
+      case 'health':
+        return <SystemHealthPage />;
+      case 'review_queue':
+        return <ReviewQueuePage />;
       case 'alerts':
         return <AlertsPage />;
       case 'prevention':

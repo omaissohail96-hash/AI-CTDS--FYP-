@@ -11,3 +11,5 @@ export { default as AlertsPage } from './AlertsPage';
 export { default as PreventionCenter } from './PreventionCenter';
 export { default as ThreatHuntingPage } from './ThreatHuntingPage';
 export { default as UserBehaviorAnalyticsPage } from './UserBehaviorAnalyticsPage';
+export { default as SystemHealthPage } from './SystemHealthPage';
+export { default as ReviewQueuePage } from './ReviewQueuePage';

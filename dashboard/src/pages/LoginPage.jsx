@@ -8,11 +8,34 @@ const LoginPage = ({ onLogin, onToggleForm }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    
+    // MFA state
+    const [requiresMfa, setRequiresMfa] = useState(false);
+    const [mfaCode, setMfaCode] = useState('');
+    const [mfaToken, setMfaToken] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+
+        if (requiresMfa) {
+            try {
+                // Verify MFA login
+                const response = await axios.post(`${API_BASE}/mfa/verify-login`, 
+                    { code: mfaCode },
+                    { headers: { Authorization: `Bearer ${mfaToken}` } }
+                );
+                const token = response.data.access_token;
+                localStorage.setItem('token', token);
+                onLogin(token);
+            } catch (err) {
+                setError(err.response?.data?.detail || 'Invalid MFA code. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+            return;
+        }
 
         try {
             const formData = new FormData();
@@ -20,9 +43,14 @@ const LoginPage = ({ onLogin, onToggleForm }) => {
             formData.append('password', password);
 
             const response = await axios.post(`${API_BASE}/login/access-token`, formData);
-            const token = response.data.access_token;
-            localStorage.setItem('token', token);
-            onLogin(token);
+            if (response.data.token_type === 'mfa') {
+                setRequiresMfa(true);
+                setMfaToken(response.data.access_token);
+            } else {
+                const token = response.data.access_token;
+                localStorage.setItem('token', token);
+                onLogin(token);
+            }
         } catch (err) {
             setError(err.response?.data?.detail || 'Invalid email or password. Please try again.');
         } finally {
@@ -46,38 +74,59 @@ const LoginPage = ({ onLogin, onToggleForm }) => {
                 )}
 
                 <form onSubmit={handleSubmit}>
-                    <div className="auth-input-group">
-                        <label>Email Address</label>
-                        <div className="auth-input-wrapper">
-                            <Mail className="input-icon" size={18} />
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="name@company.com"
-                                required
-                            />
-                        </div>
-                    </div>
+                    {!requiresMfa ? (
+                        <>
+                            <div className="auth-input-group">
+                                <label>Email Address</label>
+                                <div className="auth-input-wrapper">
+                                    <Mail className="input-icon" size={18} />
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="name@company.com"
+                                        required
+                                    />
+                                </div>
+                            </div>
 
-                    <div className="auth-input-group">
-                        <label>Secure Password</label>
-                        <div className="auth-input-wrapper">
-                            <Lock className="input-icon" size={18} />
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                            />
+                            <div className="auth-input-group">
+                                <label>Secure Password</label>
+                                <div className="auth-input-wrapper">
+                                    <Lock className="input-icon" size={18} />
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="auth-input-group">
+                            <label>MFA Code</label>
+                            <div className="auth-input-wrapper">
+                                <Shield className="input-icon" size={18} />
+                                <input
+                                    type="text"
+                                    value={mfaCode}
+                                    onChange={(e) => setMfaCode(e.target.value)}
+                                    placeholder="000000"
+                                    required
+                                    maxLength="8"
+                                    style={{ letterSpacing: '2px', textAlign: 'center' }}
+                                />
+                            </div>
+                            <small style={{display: 'block', marginTop: '8px', color: '#6b7280'}}>Enter the 6-digit code from your authenticator app.</small>
                         </div>
-                    </div>
+                    )}
 
                     <button type="submit" disabled={loading} className="btn-auth">
                         {loading ? 'Securing Session...' : (
                             <>
-                                Authenticate Dashboard <ArrowRight size={18} style={{ marginLeft: '8px' }} />
+                                {requiresMfa ? 'Verify Security Code' : 'Authenticate Dashboard'} <ArrowRight size={18} style={{ marginLeft: '8px' }} />
                             </>
                         )}
                     </button>

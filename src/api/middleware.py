@@ -2,17 +2,124 @@ import time
 import json
 import hashlib
 import uuid
+import logging
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from datetime import datetime
 from jose import jwt, JWTError
+from typing import Dict, Tuple
+
 from src.core.config import settings
 from src.core.database import SessionLocal
+from src.core.trusted_proxy import get_resolver
+from src.core import security
 from src.utils.audit import AuditLogger
 from src.models.models import APIKey, BlockedEntity, User
 from src.services.user_behavior_analytics import UserBehaviorAnalyticsService
+from src.utils.metrics_collector import metrics
 from sqlalchemy import and_
+
+logger = logging.getLogger(__name__)
+
+# Very simple in-memory rate limiter
+# In production, use Redis backend
+class InMemoryRateLimiter:
+    def __init__(self):
+        self.requests: Dict[str, list] = {}
+
+    def is_rate_limited(self, ip: str, max_requests: int, window: int = 60) -> bool:
+        now = time.time()
+        if ip not in self.requests:
+            self.requests[ip] = []
+        
+        # Clean up old requests
+        self.requests[ip] = [req_time for req_time in self.requests[ip] if now - req_time < window]
+        
+        if len(self.requests[ip]) >= max_requests:
+            return True
+            
+        self.requests[ip].append(now)
+        return False
+
+rate_limiter = InMemoryRateLimiter()
+
+class TrustedProxyMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Resolve IP using the trusted proxy resolver
+        resolved_ip = get_resolver().get_client_ip(request)
+        request.state.client_ip = resolved_ip
+        
+        start_time = time.time()
+        response = await call_next(request)
+        
+        # Collect basic metrics
+        duration = time.time() - start_time
+        metrics.increment(f"requests_{request.method}_{response.status_code}")
+        metrics.observe("scan_duration_seconds", duration)
+        
+        return response
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if not settings.RATE_LIMIT_ENABLED:
+            return await call_next(request)
+
+        client_ip = getattr(request.state, "client_ip", request.client.host if request.client else "unknown")
+        
+        # Determine limit based on endpoint
+        path = request.url.path
+        limit = settings.RATE_LIMIT_DEFAULT_RPM
+        if "/scan" in path:
+            limit = settings.RATE_LIMIT_SCAN_RPM
+        elif "/auth" in path or "/login" in path:
+            limit = settings.RATE_LIMIT_AUTH_RPM
+            
+        if rate_limiter.is_rate_limited(client_ip, limit):
+            logger.warning(f"Rate limit exceeded for IP {client_ip} on path {path}")
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too Many Requests"},
+                headers={"Retry-After": "60"}
+            )
+            
+        return await call_next(request)
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if settings.SECURITY_HEADERS_ENABLED:
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["X-XSS-Protection"] = "1; mode=block"
+            response.headers["Strict-Transport-Security"] = f"max-age={settings.HSTS_MAX_AGE}; includeSubDomains"
+            response.headers["Content-Security-Policy"] = "default-src 'self'"
+            response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+            response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response
+
+class CSRFMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Skip CSRF for safe methods or API key authenticated requests
+        if request.method in ["GET", "HEAD", "OPTIONS"]:
+            return await call_next(request)
+            
+        if "x-api-key" in request.headers or "authorization" in request.headers:
+             # Assume API client, bypass CSRF (needs proper review in real prod)
+             return await call_next(request)
+
+        # For browser session, we expect a CSRF token in header matching cookie
+        csrf_cookie = request.cookies.get("csrf_token")
+        csrf_header = request.headers.get("x-csrf-token")
+        
+        # Simplified CSRF check
+        if csrf_cookie and csrf_header and csrf_cookie != csrf_header:
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "CSRF token mismatch"}
+            )
+
+        return await call_next(request)
 
 class PreventionMiddleware(BaseHTTPMiddleware):
     """
@@ -21,13 +128,18 @@ class PreventionMiddleware(BaseHTTPMiddleware):
     """
     async def dispatch(self, request: Request, call_next):
         try:
-            # Extract client IP from request
-            client_ip = self._get_client_ip(request)
+            # Use Trusted Proxy IP
+            client_ip = getattr(request.state, "client_ip", get_resolver().get_client_ip(request))
             
-            # Check if IP is blocked in any workspace
-            # (Since middleware doesn't have workspace context, we check all workspaces)
+            # Use CacheService if Redis enabled, otherwise fallback to DB
+            import asyncio
+            from src.services.cache_service import CacheService
+            # We don't know workspace ID here so we use a wildcard or global lookup
+            # Actually, to make it fast, we can check DB directly or loop through workspaces.
+            # In an enterprise architecture, blocked IPs might be globally cached.
+            # For now, we fallback to DB query directly.
+            
             db = SessionLocal()
-            
             now = datetime.utcnow()
             blocked_entity = db.query(BlockedEntity).filter(
                 and_(
@@ -37,20 +149,12 @@ class PreventionMiddleware(BaseHTTPMiddleware):
                 )
             ).first()
             
-            db.close()
-            
             if blocked_entity:
-                # Increment blocked request counter
-                db = SessionLocal()
-                blocked_entity_db = db.query(BlockedEntity).filter(
-                    BlockedEntity.id == blocked_entity.id
-                ).first()
-                if blocked_entity_db:
-                    blocked_entity_db.blocked_request_count += 1
-                    db.commit()
+                blocked_entity.blocked_request_count += 1
+                db.commit()
                 db.close()
+                metrics.increment("active_blocks_hit")
                 
-                # Return 403 Forbidden
                 return JSONResponse(
                     status_code=403,
                     content={
@@ -60,70 +164,42 @@ class PreventionMiddleware(BaseHTTPMiddleware):
                         "blocked_until": blocked_entity.blocked_until.isoformat(),
                     }
                 )
+            db.close()
         except Exception as e:
-            print(f"Prevention Middleware Error: {e}")
+            logger.error(f"Prevention Middleware Error: {e}")
             # If middleware fails, allow request to proceed (fail-open)
         
-        response = await call_next(request)
-        return response
-    
-    def _get_client_ip(self, request: Request) -> str:
-        """Extract client IP from request, considering proxy headers"""
-        # Check for X-Forwarded-For (cloud/proxy environments)
-        forwarded_for = request.headers.get("x-forwarded-for")
-        if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
-        
-        # Check for X-Real-IP
-        real_ip = request.headers.get("x-real-ip")
-        if real_ip:
-            return real_ip
-        
-        # Use direct client connection IP
-        if request.client:
-            return request.client.host
-        
-        return "unknown"
+        return await call_next(request)
 
 
 class AuditMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         await self._record_uba_activity(request)
 
-        # We only want to auto-log mutations (POST, PUT, DELETE, PATCH)
         if request.method in ["GET", "HEAD", "OPTIONS"]:
             return await call_next(request)
 
-        # Process the request
         response = await call_next(request)
 
-        # Attempt to log the activity asynchronously (Best effort)
-        # Note: In a production app, we might use a background task or message queue
+        # Dispatch async audit log using Celery task if enabled
         try:
-            db = SessionLocal()
-            
             # Simple metadata extraction
             metadata = {
                 "path": request.url.path,
                 "method": request.method,
-                "client_ip": request.client.host if request.client else "unknown",
+                "client_ip": getattr(request.state, "client_ip", "unknown"),
                 "status_code": response.status_code
             }
-
-            # We don't have easy access to 'current_user' or 'workspace' here without 
-            # re-decoding JWT or extracting from response context.
-            # For this Phase, we'll log the "Raw API Activity"
             
-            AuditLogger.log(
-                db,
+            from src.workers.tasks import dispatch_audit_log
+            dispatch_audit_log(
                 action=f"api_{request.method.lower()}",
                 module="gateway",
                 status="success" if response.status_code < 400 else "failure",
                 metadata=metadata
             )
-            db.close()
         except Exception as e:
-            print(f"Audit Logging Error: {e}")
+            logger.error(f"Audit Logging Error: {e}")
 
         return response
 
@@ -151,20 +227,26 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 workspace_id=workspace_id,
                 user_id=user.id if user else None,
                 event_type=event_type,
-                ip_address=request.client.host if request.client else None,
+                ip_address=getattr(request.state, "client_ip", None),
                 endpoint_accessed=path,
                 metadata={"method": request.method},
             )
         except Exception as exc:
-            print(f"UBA middleware telemetry failed: {exc}")
+            logger.error(f"UBA middleware telemetry failed: {exc}")
         finally:
             db.close()
 
     def _resolve_user_from_bearer(self, db, request: Request) -> User | None:
-        auth_header = request.headers.get("authorization") or ""
-        if not auth_header.lower().startswith("bearer "):
+        # Check cookie first for browser sessions, then auth header
+        token = request.cookies.get("access_token")
+        if not token:
+            auth_header = request.headers.get("authorization") or ""
+            if auth_header.lower().startswith("bearer "):
+                token = auth_header.split(" ", 1)[1]
+        
+        if not token:
             return None
-        token = auth_header.split(" ", 1)[1]
+            
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             subject = payload.get("sub")

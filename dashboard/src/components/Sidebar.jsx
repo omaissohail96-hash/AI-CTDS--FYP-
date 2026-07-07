@@ -1,22 +1,14 @@
-import { LayoutDashboard, Globe, Mail, Activity, ShieldAlert, Settings, LogOut, Shield, AlertCircle, Lock, Search, BrainCircuit } from 'lucide-react';
+import { LayoutDashboard, Globe, Mail, Activity, ShieldAlert, Settings, LogOut, Shield, AlertCircle, Lock, Search, BrainCircuit, ActivitySquare, CheckSquare } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
     const menuItems = [
         { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+        { id: 'health', label: 'System Health', icon: ActivitySquare },
+        { id: 'review_queue', label: 'Review Queue', icon: CheckSquare },
         { id: 'alerts', label: 'Alerts', icon: AlertCircle },
         { id: 'hunting', label: 'Threat Hunting', icon: Search },
         { id: 'uba', label: 'User Behavior', icon: BrainCircuit },
         { id: 'prevention', label: 'Prevention Center', icon: Lock },
-        { id: 'url', label: 'URL Scanner', icon: Globe },
-        { id: 'email', label: 'Email Scan', icon: Mail },
-        { id: 'network', label: 'Network IDS', icon: Activity },
-        { id: 'web', label: 'Web Attack', icon: ShieldAlert },
-        { id: 'settings', label: 'Settings', icon: Settings },
-    ];
-
-    return (
-        <aside className="sidebar">
-            <div className="logo" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('dashboard')}>
                 <div className="logo-icon">
                     <Shield size={24} color="white" />
                 </div>

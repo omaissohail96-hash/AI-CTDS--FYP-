@@ -7,70 +7,234 @@ Here is the complete reference map, database schema, workflow description, and c
 # 🛡️ PROJECT OVERVIEW & GOALS
 CyberGuard AI is a multi-vector threat detection and real-time prevention platform designed for enterprise threat monitoring. It ingests URLs, Emails, Network logs, and Web application requests, classifies them using trained machine learning classifiers, enriches them with threat intelligence, and correlates attacks to dynamically adjust risk scores. It includes an active Intrusion Prevention System (IPS) that blocks malicious entities at the middleware layer (403 Forbidden) and runs automated cleanups. It also tracks user activities using User Behavior Analytics (UBA) to detect anomalies (like Impossible Travel or API spikes).
 
+The system is multi-tenant and workspace-isolated. Each workspace has independent API keys, rate limits, monthly scan quotas, and security configuration profiles.
+
 ---
 
 # 🏗️ SYSTEM ARCHITECTURE & COMPONENTS
 
-1. FRONTEND: React (Vite) styled with Vanilla CSS Glassmorphism. Features dynamic dashboards, scanner sections, user behavior analytics charts (recharts), threat timelines, alert panels, and a threat prevention center (active block lists, unblock history).
-2. BACKEND API: FastAPI (Python 3.11+) + SQLAlchemy ORM + SQLite database. Integrated with JWT auth and multi-tenant workspace isolation.
-3. MIDDLEWARE LAYER:
-   - AuditMiddleware: Automatically intercepts mutations (POST, DELETE) and logs administrative events for SOC-2 audit compliance.
-   - PreventionMiddleware: Extracts client IP, queries active blocklists, and blocks requests with 403 Forbidden if blocked.
-4. AI AGENT ORCHESTRATOR (SecurityAgent): Coordinates vector scans using Python's asyncio to process classifications in parallel. Normalizes outputs and calculates unified threat risk scores (0-100).
-5. MACHINE LEARNING DETECTORS:
-   - URL Scanner: Random Forest model extracting lexical features to flag phishing URLs.
-   - Email Scanner: NLP Naive Bayes + TF-IDF vectorizer classifying phishing emails.
-   - Network IDS: Random Forest classifier built on NSL-KDD dataset to flag network traffic anomalies.
-   - Web Attack Scanner: Custom classifier detecting SQLi and XSS payloads.
-6. THREAT INTELLIGENCE: TTL-cached lookups matching domain and IP indicators against cached threat blacklists.
-7. CORRELATION ENGINE: Evaluates occurrences of the same indicators across multiple vectors within a 24-hour window, applying scoring multipliers.
-8. INTENSE ALERT SYSTEM: Escalates severity (LOW, MEDIUM, HIGH, CRITICAL) when intelligence hits or repeated patterns occur, employing a 60-minute duplicate cooldown. Connects to webhooks and SMTP email templates.
-9. INTRA-SYSTEM SCHEDULER: Background cron scheduler running cleanup loops every 5 minutes to release expired blocked IPs.
-10. USER BEHAVIOR ANALYTICS (UBA): Builds a 30-day baseline profile of IPs, login hours, and locations per user. Scores events and alerts on anomalies (Impossible travel speed > 900 km/h, credential brute-forcing, API access spikes).
-11. EXPLAINABILITY & MITRE ATT&CK: Static mapping pipeline linking classifications to MITRE ATT&CK technique IDs (T1566 Phishing, T1190 Web Exploits, etc.) and generating text explanations with recommended analyst actions.
-12. EXECUTIVE PDF GENERATOR: Custom dependency-free PDF layout builder generating assessment reports.
+### 1. FRONTEND: React (Vite) styled with Vanilla CSS Glassmorphism
+The frontend is built as a single page application (SPA) with a dark glassmorphism theme, custom scrollbars, and dynamic state transitions. It consists of the following key pages and views:
+- **Landing Page (`LandingPage.jsx`)**: The public-facing entry page showcasing product offerings, threat vector scanning capabilities, and dashboard teasers.
+- **Auth Pages (`LoginPage.jsx` / `RegisterPage.jsx`)**: Handles secure user registration and login, storing authorization tokens (JWT) in local storage for session management. Supports multi-tenant workspace assignment.
+- **Main SOC Dashboard (`DashboardPage.jsx`)**: The central security operations center. Visualizes workspace statistics (security score, total threat counts, threat level gauge, API usage), critical alerts, threat category breakdown (using recharts graphs), and a timeline of recent security events.
+- **URL Scanner (`URLScannerPage.jsx`)**: A simple testing page where security analysts can paste a URL to analyze it immediately. Displays prediction results, confidence, risk score, and MITRE ATT&CK mappings.
+- **Email Scanner (`EmailScannerPage.jsx`)**: Allows security analysts to paste email subjects and body text to detect phishing content. Shows probability scores and highlight warnings.
+- **Network Monitor (`NetworkMonitorPage.jsx`)**: Displays network flow activity, live connection statuses, and simulated traffic logs. Shows flags if network rules are triggered.
+- **Web Attack Page (`WebAttackPage.jsx`)**: Allows testing of raw web request payloads (query parameters, JSON bodies) against custom SQL injection, cross-site scripting (XSS), and path traversal rules.
+- **Prevention Center (`PreventionCenter.jsx`)**: The active blocking center. Displays currently blocked IPs, Domains, and URL paths. Includes a block expiration progress indicator, history log of unblocked entities, manual blocking overrides, and automatic IPS release configuration.
+- **User Behavior Analytics (`UserBehaviorAnalyticsPage.jsx`)**: Displays a dashboard of user behavior anomaly detections. Visualizes baseline user profiles (average daily logins, API call thresholds, common locations/IPs) and flags anomalous UBA events (Impossible Travel, off-hours logins, API spikes).
+- **Threat Hunting (`ThreatHuntingPage.jsx`)**: An interactive query builder for SOC analysts to search historical scans, filter by severity, confidence, workspace, vector, and correlate overlapping indicators.
+- **Settings Page (`SettingsPage.jsx`)**: Workspace settings including API key generation/revocation, monthly scan quota widgets, rate limit configurations, and workspace profile metadata.
+
+### 2. BACKEND API: FastAPI (Python 3.11+) + SQLAlchemy ORM + SQLite database
+- Fully asynchronous API gateway managing workspace creation, user authentication (JWT), scan invocations, alert states, and blocking lists.
+- Implements Workspace multi-tenant middleware to isolate data dynamically based on the user's workspace ID.
+
+### 3. MIDDLEWARE LAYER
+- **AuditMiddleware**: Automatically intercepts write mutations (POST, DELETE) to log administrative actions (e.g. unblocking an IP, generating an API key, resolving an alert) for SOC-2 audit compliance.
+- **PreventionMiddleware**: Intercepts all incoming API and workspace gateway requests. Extracts the client's source IP, queries active blocklists (`BlockedEntity`), and blocks requests immediately with a `403 Forbidden` response if the entity is active in the blocklist.
+
+### 4. AI AGENT ORCHESTRATOR (`SecurityAgent`)
+- Acts as the central threat evaluation pipeline (`orchestrator.py`).
+- Routes incoming payloads to vector detectors in parallel using `asyncio.gather`.
+- Coordinates threat intelligence lookups (`ThreatIntelService`), cross-vector correlation (`CorrelationEngine`), and User Behavior Analytics telemetry.
+- Synthesizes vector analysis reports, computes the unified threat risk score (0-100), maps classifications to MITRE ATT&CK vectors, generates developer-friendly text explanations, and issues automated alerts.
+
+### 5. MACHINE LEARNING DETECTORS
+(Refer to the detailed "MACHINE LEARNING DETECTORS & FEATURE ENGINEERING" section below)
+
+### 6. THREAT INTELLIGENCE (`ThreatIntelService`)
+- Performs real-time lookups on indicators (IPs, domains, email addresses, URL strings) against local and cached threat blacklists with specific TTL configurations.
+
+### 7. CORRELATION ENGINE (`CorrelationEngine`)
+- Scans historical records within a rolling 24-hour window to find overlapping indicators (e.g. an IP address flagged in a Network Scan also appearing in a Web payload scan, or a URL scanned in an email matching a known phishing site).
+- Applies an escalation boost factor (e.g. +10 default boost, or 1.15x to 1.3x multiplier) to the final risk score when cross-vector indicators match.
+
+### 8. INTENSE ALERT SYSTEM (`AlertService`)
+- Automatically escalates threat severity (LOW, MEDIUM, HIGH, CRITICAL) based on the calculated risk score.
+- Restricts duplicate alerts for the same indicator using a 60-minute duplicate cooldown.
+- Distributes alert notifications via webhooks and SMTP email templates to configured security contacts.
+
+### 9. INTRA-SYSTEM SCHEDULER (`prevention_scheduler.py`)
+- Runs a background thread cron process every 5 minutes to release blocked IPs whose block lifetimes (`blocked_until`) have expired, restoring their network access.
+
+### 10. USER BEHAVIOR ANALYTICS (UBA) (`UserBehaviorAnalyticsService`)
+- Evaluates active user sessions against baseline profiles, calculating anomaly scores based on deviations from normal activities (impossible travel speeds, brute-force attempts, off-hours access, API spikes).
+
+### 11. EXPLAINABILITY & MITRE ATT&CK (`mitre_mapping_service.py` & `threat_explanation_service.py`)
+- Maps classified threat vectors to formal MITRE ATT&CK technique IDs (e.g., T1566 Phishing, T1190 Exploit Public-Facing Application).
+- Synthesizes clear, readable textual explanations detailing why an alert was triggered and provides recommended analyst remediation steps.
+
+### 12. EXECUTIVE PDF GENERATOR (`pdf_report_service.py`)
+- Compiles weekly and monthly security posture summaries. Generates a formatted PDF report with workspace KPIs, active threat breakdown charts, UBA event histories, and compliance audit summaries.
+
+---
+
+# 🤖 MACHINE LEARNING DETECTORS & FEATURE ENGINEERING
+
+The CyberGuard AI platform uses four primary classifiers to analyze threat vectors. Below is the exact implementation detail for each detector, including the model algorithm, training datasets, features trained on, text preprocessing pipelines, label encodings, and live detection heuristics.
+
+---
+
+### A. URL Scanner Model
+- **Source Code**: [url_detector.py](file:///c:/Users/Farooq/Desktop/Final_Year_Project/detectors/url_detector.py) | [url_feature_extractor.py](file:///c:/Users/Farooq/Desktop/Final_Year_Project/detectors/url_feature_extractor.py) | [train_url_model.py](file:///c:/Users/Farooq/Desktop/Final_Year_Project/train_url_model.py)
+- **Classifier**: Random Forest Classifier (`RandomForestClassifier` with 80 estimators, max depth 12, min samples split 10, min samples leaf 5).
+- **Training Dataset**: UCI Phishing Websites Dataset (stored in `.arff` format, containing features representing malicious and benign URLs).
+- **Target Label Mapping**:
+  - `0`: PHISHING WEBSITE (corresponding to Suspicious/Phishing labels mapped from UCI Result values)
+  - `1`: LEGITIMATE WEBSITE
+- **Features Trained On (30 features total)**:
+  The model is trained on 30 lexical, host-based, and page-based indicators extracted from the URL. The list of features includes:
+  1. `having_IP`: Binary (1 if the URL contains a raw IP address pattern, 0 otherwise).
+  2. `URL_Length`: Integer (length of the entire URL string).
+  3. `Shortining_Service`: Binary (1 if the URL is shortened using a known service like bit.ly or tinyurl, 0 otherwise).
+  4. `having_At_Symbol`: Binary (1 if the URL contains an `@` character, 0 otherwise).
+  5. `double_slash_redirecting`: Binary (1 if the double slash `//` occurs more than once, 0 otherwise).
+  6. `Prefix_Suffix`: Binary (1 if a hyphen `-` is present in the domain name, 0 otherwise).
+  7. `having_Sub_Domain`: Integer (number of subdomains present, calculated as count of dots `.` in domain name minus 1).
+  8. `SSLfinal_State`: Binary (1 if the URL scheme/protocol is `https`, 0 otherwise).
+  9. `HTTPS_token`: Binary (1 if the token `https` is present in the netloc/domain name, 0 otherwise).
+  10. `port`: Binary (1 if a non-standard port is explicitly specified, 0 otherwise).
+  11. *UCI Dataset Placeholders / Metadata Features* (initialized to 0 or 1 baseline values to align input shape with the UCI 30-feature vector):
+      `Domain_registeration_length`, `Favicon`, `Request_URL`, `URL_of_Anchor`, `Links_in_tags`, `SFH`, `Submitting_to_email`, `Abnormal_URL`, `Redirect`, `on_mouseover`, `RightClick`, `popUpWidnow`, `Iframe`, `age_of_domain`, `DNSRecord`, `web_traffic`, `Page_Rank`, `Google_Index` (defaults to 1), `Links_pointing_to_page`, `Statistical_report`.
+- **Live Overrides & Heuristics**:
+  - **Whitelisting**: If a URL contains safe domains (e.g. `google.com`, `github.com`, `microsoft.com`, `apple.com`), it bypasses the model verdict and is labeled **LEGITIMATE WEBSITE** with a minimum 98% confidence.
+  - **Phishing Keyword Boost**: If the model predicts **LEGITIMATE WEBSITE** but with a confidence score under 85%, and the URL contains 2 or more suspicious keywords (e.g. `login`, `verify`, `update`, `bank`, `secure`, `account`, `confirm`), the verdict is overridden to **PHISHING WEBSITE** with a confidence score of 95%.
+
+---
+
+### B. Email Phishing Model
+- **Source Code**: [email_detector.py](file:///c:/Users/Farooq/Desktop/Final_Year_Project/detectors/email_detector.py) | [merge_and_train_email_model.py](file:///c:/Users/Farooq/Desktop/Final_Year_Project/merge_and_train_email_model.py)
+- **Classifier**: Multinomial Naive Bayes (`MultinomialNB`).
+- **Training Dataset**: A custom merged email corpus built from multiple public email datasets, deduplicated and sampled down to a balanced 40,000-row subset (to avoid memory crashes during training).
+- **Target Label Mapping**:
+  - `0`: LEGITIMATE EMAIL (HAM)
+  - `1`: PHISHING EMAIL (SPAM)
+- **Preprocessing Pipeline**:
+  - Text input is created by combining the email's Subject and Body: `subject + " " + body`.
+  - The text is converted to lowercase, strips leading/trailing whitespaces, replaces URL links matching `http\S+` with the token `" URL "`, and replaces all non-word characters `\W+` with spaces.
+- **Features Trained On (1000 features total)**:
+  - Text features are extracted using a **TF-IDF Vectorizer** configured with:
+    - `max_features=1000` (retains the top 1000 most predictive vocabulary words).
+    - `stop_words='english'` (filters out English stop words like 'the', 'is', 'at').
+    - `min_df=3` (ignores terms that appear in fewer than 3 email documents).
+  - The model trains on a 1,000-column sparse matrix representing the TF-IDF frequencies of these vocabulary words.
+
+---
+
+### C. Network Intrusion Detection System (IDS) Model
+- **Source Code**: [network_detectors.py](file:///c:/Users/Farooq/Desktop/Final_Year_Project/detectors/network_detectors.py) | [train_network_ids.py](file:///c:/Users/Farooq/Desktop/Final_Year_Project/train_network_ids.py) | [network_defense.py](file:///c:/Users/Farooq/Desktop/Final_Year_Project/src/services/network_defense.py)
+- **Classifier**: Random Forest Classifier (`RandomForestClassifier` with 100 estimators, max depth 15).
+- **Training Dataset**: Cleaned NSL-KDD Network Intrusion Dataset.
+- **Preprocessing Pipeline**:
+  - Cleans input data by replacing infinity values (`inf`, `-inf`) with `NaN`, drops rows with missing data, and selects only numerical columns.
+  - Standardizes the numerical vectors using `StandardScaler` (saved as `network_scaler.pkl` to scale runtime inputs prior to inference).
+- **Target Label Mapping (Multiclass)**:
+  - `0`: NORMAL TRAFFIC
+  - `1`: DoS ATTACK
+  - `2`: PORT SCAN
+  - `3`: BRUTE FORCE
+  - `4`: BOTNET
+- **Features Trained On (76 network flow features)**:
+  The model is trained on 76 numeric metrics of network flows. The exact list of features includes:
+  `Flow Duration`, `Total Fwd Packet`, `Total Bwd packets`, `Total Length of Fwd Packet`, `Total Length of Bwd Packet`, `Fwd Packet Length Max`, `Fwd Packet Length Min`, `Fwd Packet Length Mean`, `Fwd Packet Length Std`, `Bwd Packet Length Max`, `Bwd Packet Length Min`, `Bwd Packet Length Mean`, `Bwd Packet Length Std`, `Flow Bytes/s`, `Flow Packets/s`, `Flow IAT Mean`, `Flow IAT Std`, `Flow IAT Max`, `Flow IAT Min`, `Fwd IAT Total`, `Fwd IAT Mean`, `Fwd IAT Std`, `Fwd IAT Max`, `Fwd IAT Min`, `Bwd IAT Total`, `Bwd IAT Mean`, `Bwd IAT Std`, `Bwd IAT Max`, `Bwd IAT Min`, `Fwd PSH Flags`, `Bwd PSH Flags`, `Fwd URG Flags`, `Bwd URG Flags`, `Fwd Header Length`, `Bwd Header Length`, `Fwd Packets/s`, `Bwd Packets/s`, `Packet Length Min`, `Packet Length Max`, `Packet Length Mean`, `Packet Length Std`, `Packet Length Variance`, `FIN Flag Count`, `SYN Flag Count`, `RST Flag Count`, `PSH Flag Count`, `ACK Flag Count`, `URG Flag Count`, `CWR Flag Count`, `ECE Flag Count`, `Down/Up Ratio`, `Average Packet Size`, `Fwd Segment Size Avg`, `Bwd Segment Size Avg`, `Fwd Bytes/Bulk Avg`, `Fwd Packet/Bulk Avg`, `Fwd Bulk Rate Avg`, `Bwd Bytes/Bulk Avg`, `Bwd Packet/Bulk Avg`, `Bwd Bulk Rate Avg`, `Subflow Fwd Packets`, `Subflow Fwd Bytes`, `Subflow Bwd Packets`, `Subflow Bwd Bytes`, `FWD Init Win Bytes`, `Bwd Init Win Bytes`, `Fwd Act Data Pkts`, `Fwd Seg Size Min`, `Active Mean`, `Active Std`, `Active Max`, `Active Min`, `Idle Mean`, `Idle Std`, `Idle Max`, `Idle Min`.
+- **Heuristic Triggers & Rule-Based Network Defense (`NetworkDefenseService`)**:
+  In addition to the ML model output, the system evaluates incoming traffic flow using high-performance security rule heuristics to dynamically compute an anomaly score:
+  - **High-Traffic Rate Rule**: Flow Rate > 100,000 Bytes/s OR Packet Rate > 5,000 Packets/s increases the anomaly score by **25 points**.
+  - **Brute-Force Rule**: Failed login attempts >= 5 increases the anomaly score by **30 points**.
+  - **Suspicious Protocol Rule**: Usage of protocols other than standard TCP, UDP, or ICMP increases the anomaly score by **20 points**.
+  - **Syn Flood Rule**: SYN Flag Count >= 20 in the flow increases the anomaly score by **20 points**.
+  - **Repeat Offender IP Rule**: If the source IP was logged in the network prevention audit tables at least 3 times in the last 10 minutes, the score increases by **25 points**.
+  - **Port Scanning Pattern Rule**: If the source IP attempted connections to 10 or more distinct destination ports in the last 15 minutes, the score increases by **35 points**.
+  - *Dynamic Intervention thresholds*:
+    - **Score >= 70**: High-risk trigger. Severity is set to **CRITICAL**, and the system automatically enforces temporary blocking and rate limiting.
+    - **Score >= 45**: Medium-high-risk trigger. Severity is set to **HIGH**, enforcing active rate limiting on the IP.
+    - **Score >= 20**: Low-medium trigger. Severity is set to **MEDIUM**.
+
+---
+
+### D. Web Attack Scanner
+- **Source Code**: [web_detector.py](file:///c:/Users/Farooq/Desktop/Final_Year_Project/detectors/web_detector.py) | [train_web_attack_model.py](file:///c:/Users/Farooq/Desktop/Final_Year_Project/train_web_attack_model.py) | [detection_service.py:L55-L101](file:///c:/Users/Farooq/Desktop/Final_Year_Project/src/services/detection_service.py#L55-L101)
+- **Classifier**: High-fidelity Regular Expression (Regex) Scanner + Fallback Classifier Model.
+- **Target Label Mapping**:
+  - `0`: LEGITIMATE REQUEST (SECURE)
+  - `1`: PHISHING / MALICIOUS REQUEST
+- **Heuristic Rules & RegEx Feature Scopes**:
+  Live analysis checks web request payloads against a series of compiled regex engines:
+  - **SQL Injection (SQLi) Pattern**: Matches quotes (`'`), comment dashes (`--`), hashes (`#`), hex values (`%27`, `%23`), and SQL command keywords (`union`, `select`, `insert`, `drop`, `update`, `delete`, `truncate`, `sleep`, `benchmark`). Overrides to **SQL INJECTION** (severity: **CRITICAL**, confidence: **99.0%**).
+  - **Cross-Site Scripting (XSS) Pattern**: Matches tags (`<script>`), encoded tags (`%3Cscript%3E`), javascript links (`javascript:`), element handlers (`onerror=`, `onload=`), alert triggers (`alert(`), and malicious images (`<img `). Overrides to **CROSS-SITE SCRIPTING (XSS)** (severity: **CRITICAL**, confidence: **99.0%**).
+  - **Local File Inclusion (LFI) / Path Traversal Pattern**: Matches directory jumps (`../`, `..\`), encoded jumps (`%2e%2e%2f`, `%2e%2e/`, `../%2f`), and sensitive system files (`/etc/passwd`). Overrides to **PATH TRAVERSAL** (severity: **HIGH**, confidence: **95.0%**).
+- **Original Model Training Exception**:
+  - *Accidental Training Setup*: The model script `train_web_attack_model.py` originally trained `web_attack_model.pkl` on `Phising_Training_Dataset.csv` (a URL phishing dataset) instead of web payload logs.
+  - *Mitigation & Fallback*: To prevent false positives, the system uses the high-precision regex scanners above. When payloads do not match any of these regex threat patterns, the system calls the fallback model `predict_web_attack({})` with empty dictionary features, and overrides the verdict to **LEGITIMATE REQUEST** (severity: **SECURE**, confidence: **90.0%**).
 
 ---
 
 # 🗄️ DATABASE SCHEMA REFERENCE (SQLAlchemy Models)
 
-The system manages data across 11 tables:
-1. Workspace: id (UUID), name, tier, monthly_quota, rate_limit_rpm, created_at.
-2. User: id (UUID), workspace_id (FK), email, hashed_password, full_name, role (admin/developer/viewer), is_active, created_at.
-3. APIKey: id (UUID), workspace_id (FK), key_hash (SHA-256), label, is_active, created_at, last_used.
-4. ScanHistory: id (UUID), workspace_id (FK), user_id (FK), input_type (url/email/network/web), entity (indexed IP/domain/sender), entities (JSON list), attack_type, severity, ml_confidence, intelligence_hit (bool), correlation_hit (bool), prevention_triggered (bool), risk_score, verdict, explanation (JSON), mitre_mappings (JSON), details (JSON), created_at.
-5. AuditLog: id (UUID), workspace_id (FK), user_id (FK), action, module, status, event_metadata (JSON), created_at.
-6. UserBehaviorProfile: id (UUID), workspace_id (FK), user_id (FK), average_daily_logins, average_api_calls, common_ip_addresses (JSON), common_locations (JSON), common_login_hours (JSON), baseline_risk_score, created_at, updated_at.
-7. UserBehaviorEvent: id (UUID), workspace_id (FK), user_id (FK), event_type, ip_address, location, endpoint_accessed, timestamp, anomaly_score, risk_level, explanation (JSON).
-8. ThreatIntel: id (UUID), entity_value, entity_type, threat_type, risk_level, source, last_synced, is_active.
-9. Alert: id (UUID), workspace_id (FK), user_id (FK), scan_history_id (FK), alert_type, severity, title, description, entity, entity_type, source_vector, risk_score, ml_confidence, indicators (JSON), correlated_events, recommended_action, resolved_status, resolved_at, resolved_by (FK), resolution_notes, notification_sent, email_sent, webhook_sent, created_at, updated_at.
-10. AlertHistory: id (UUID), alert_id (FK), workspace_id (FK), user_id (FK), action, previous_severity, new_severity, notes, created_at.
-11. BlockedEntity: id (UUID), workspace_id (FK), entity (IP/URL/Domain), entity_type, severity, reason, blocked_until, auto_generated (bool), resolved_status (bool), prevention_reason, related_alert_id (FK), related_scan_id (FK), blocked_request_count, created_at, created_by (FK), unblocked_at, unblocked_by (FK).
+The database schema manages SaaS state, telemetry, and prevention rules across 11 tables:
+
+1. **Workspace**: Defines tenants. Includes `id` (UUID), `name`, `tier` (free/pro/enterprise), `monthly_quota` (scan limits), `rate_limit_rpm` (RPM configuration), and `created_at`.
+2. **User**: Represents platform users. Includes `id` (UUID), `workspace_id` (FK), `email`, `hashed_password`, `full_name`, `role` (admin, developer, viewer), `is_active`, and `created_at`.
+3. **APIKey**: Client secrets for accessing APIs programmatically. Includes `id` (UUID), `workspace_id` (FK), `key_hash` (SHA-256), `label`, `is_active`, `created_at`, and `last_used`.
+4. **ScanHistory**: Records of all vector scans. Includes `id` (UUID), `workspace_id` (FK), `user_id` (FK), `input_type` (url/email/network/web), `entity` (IP/Domain/Sender), `entities` (JSON list of extracted items), `attack_type`, `severity`, `ml_confidence`, `intelligence_hit` (bool), `correlation_hit` (bool), `prevention_triggered` (bool), `risk_score`, `verdict`, `explanation` (JSON), `mitre_mappings` (JSON), `details` (JSON), and `created_at`.
+5. **AuditLog**: Administrative action trail. Includes `id` (UUID), `workspace_id` (FK), `user_id` (FK), `action` (e.g. resolve_alert, unblock_ip), `module`, `status` (success/warning/failure), `event_metadata` (JSON), and `created_at`.
+6. **UserBehaviorProfile**: Baseline behavior configuration per user. Includes `id` (UUID), `workspace_id` (FK), `user_id` (FK), `average_daily_logins`, `average_api_calls`, `common_ip_addresses` (JSON), `common_locations` (JSON), `common_login_hours` (JSON), `baseline_risk_score`, `created_at`, and `updated_at`.
+7. **UserBehaviorEvent**: Individual user actions tracked by UBA. Includes `id` (UUID), `workspace_id` (FK), `user_id` (FK), `event_type`, `ip_address`, `location`, `endpoint_accessed`, `timestamp`, `anomaly_score`, `risk_level`, and `explanation` (JSON).
+8. **ThreatIntel**: Threat indicators blacklist cache. Includes `id` (UUID), `entity_value` (malicious IP/domain/email), `entity_type` (ip/domain/email), `threat_type` (phishing/malware/botnet), `risk_level`, `source` (local/external feed), `last_synced`, and `is_active`.
+9. **Alert**: High-priority alerts generated by SecurityAgent. Includes `id` (UUID), `workspace_id` (FK), `user_id` (FK), `scan_history_id` (FK), `alert_type`, `severity`, `title`, `description`, `entity`, `entity_type`, `source_vector` (URL/EMAIL/NETWORK/WEB/UBA), `risk_score`, `ml_confidence`, `indicators` (JSON), `correlated_events` (count), `recommended_action`, `resolved_status`, `resolved_at`, `resolved_by` (FK), `resolution_notes`, `notification_sent`, `email_sent`, `webhook_sent`, `created_at`, and `updated_at`.
+10. **AlertHistory**: State change history logs for alerts. Includes `id` (UUID), `alert_id` (FK), `workspace_id` (FK), `user_id` (FK), `action` (escalate/resolve), `previous_severity`, `new_severity`, `notes`, and `created_at`.
+11. **BlockedEntity**: Contains lists of blocked IPs, URL paths, and domains enforced by IPS. Includes `id` (UUID), `workspace_id` (FK), `entity`, `entity_type` (ip/url/domain), `severity`, `reason`, `blocked_until` (timestamp), `auto_generated` (bool), `resolved_status` (bool), `prevention_reason`, `related_alert_id` (FK), `related_scan_id` (FK), `blocked_request_count`, `created_at`, `created_by` (FK), `unblocked_at`, and `unblocked_by` (FK).
 
 ---
 
 # 🔌 API GATEWAY ENDPOINT SCHEMAS
 
-- AUTH: POST `/api/v1/auth/register` | POST `/api/v1/auth/token` | GET `/api/v1/auth/me`
-- WORKSPACE: GET `/api/v1/workspace` | POST `/api/v1/workspace/api-keys` | DELETE `/api/v1/workspace/api-keys/{id}`
-- DETECTOR AGENT: POST `/api/v1/agent/analyze` (Runs parallel ML scanners + threat intelligence lookup + correlation engine score boost + automated IPS check + UBA recording + audit trace)
-- STATS: GET `/api/v1/stats/threat-summary?hours={h}` | GET `/api/v1/stats/recent-scans` | GET `/api/v1/stats/threat-distribution?hours={h}`
-- ALERTS: GET `/api/v1/alerts` | GET `/api/v1/alerts/recent` | GET `/api/v1/alerts/critical` | POST `/api/v1/alerts/{id}/resolve` | POST `/api/v1/alerts/{id}/escalate` | GET `/api/v1/alerts/stats`
-- PREVENTION (IPS): GET `/api/v1/prevention/blocked` | GET `/api/v1/prevention/stats` | POST `/api/v1/prevention/unblock/{id}` | GET `/api/v1/prevention/history` | GET `/api/v1/prevention/reasoning/{id}`
-- UBA: GET `/api/v1/uba/stats` | GET `/api/v1/uba/profiles` | GET `/api/v1/uba/user/{id}` | GET `/api/v1/uba/events`
-- REPORTS: GET `/api/v1/reports/security-report?hours={h}` (Generates dynamic PDF report)
+- **AUTH**:
+  - `POST /api/v1/auth/register` (Register new user and tenant workspace)
+  - `POST /api/v1/auth/token` (OAuth2 token generation, returns JWT token)
+  - `GET /api/v1/auth/me` (Retrieve current session details)
+- **WORKSPACE**:
+  - `GET /api/v1/workspace` (Fetch tenant limits, tier, and configurations)
+  - `POST /api/v1/workspace/api-keys` (Generate new API key)
+  - `DELETE /api/v1/workspace/api-keys/{id}` (Revoke an active API key)
+- **DETECTOR AGENT**:
+  - `POST /api/v1/agent/analyze` (Primary scanning route. Accepts payload `{type: url/email/network/web, data: ...}`. Triggers parallel vector evaluation, UBA updates, correlation engine checks, mitigation checks, and issues SOC alerts)
+- **STATS**:
+  - `GET /api/v1/stats/threat-summary?hours={h}` (Total scans, severity distribution, top attack vectors, and API quota)
+  - `GET /api/v1/stats/recent-scans` (Returns last 10 scans with MITRE mappings and threat status)
+  - `GET /api/v1/stats/threat-distribution?hours={h}` (Aggregates scans by score ranges `0-30`, `31-60`, `61-85`, `86-100` and attack type)
+- **ALERTS**:
+  - `GET /api/v1/alerts` (List active alerts)
+  - `GET /api/v1/alerts/recent` | `GET /api/v1/alerts/critical` (Priority lists)
+  - `POST /api/v1/alerts/{id}/resolve` (Analyst resolution)
+  - `POST /api/v1/alerts/{id}/escalate` (Escalate alert severity)
+  - `GET /api/v1/alerts/stats` (Alert resolution statistics)
+- **PREVENTION (IPS)**:
+  - `GET /api/v1/prevention/blocked` (List active blocked entities)
+  - `POST /api/v1/prevention/unblock/{id}` (Manually unblock an entity, logging to audit trail)
+  - `GET /api/v1/prevention/stats` | `GET /api/v1/prevention/history` (IPS historical metrics)
+  - `GET /api/v1/prevention/reasoning/{id}` (Explains why an IP/domain was blocked)
+- **UBA**:
+  - `GET /api/v1/uba/stats` (Overview of workspace anomalies, anomaly counts, and risk distribution)
+  - `GET /api/v1/uba/profiles` (List baseline user behavior profiles)
+  - `GET /api/v1/uba/user/{id}` (Fetch detailed profile and events for a user)
+  - `GET /api/v1/uba/events` (Get recent UBA event logs)
+- **REPORTS**:
+  - `GET /api/v1/reports/security-report?hours={h}` (Generates a dynamic SOC assessment PDF report)
 
 ---
 
 # 📂 DIRECTORY STRUCTURE
 
-- `/src/api/v1/` : Route files (auth.py, agent.py, alerts.py, prevention.py, uba.py, reports.py, etc.)
+- `/src/api/v1/` : Route files (`auth.py`, `agent.py`, `alerts.py`, `prevention.py`, `uba.py`, `reports.py`, `stats.py`)
 - `/src/api/middleware.py` : Intercepts blocking requests (IPS) and logs compliance actions.
 - `/src/agent/orchestrator.py` : Handles payload analysis coordination and scoring.
-- `/src/services/` : Core engines (alert_service.py, prevention_engine.py, user_behavior_analytics.py, pdf_report_service.py, mitre_mapping_service.py, threat_explanation_service.py, threat_intel.py).
+- `/src/services/` : Core engines (`alert_service.py`, `prevention_engine.py`, `user_behavior_analytics.py`, `pdf_report_service.py`, `mitre_mapping_service.py`, `threat_explanation_service.py`, `threat_intel.py`, `detection_service.py`, `network_defense.py`).
 - `/src/models/models.py` : Database mappings.
 - `/src/utils/prevention_scheduler.py` : Runs background task threads.
-- `/dashboard/src/pages/` : React UI dashboards (DashboardPage.jsx, PreventionCenter.jsx, UserBehaviorAnalyticsPage.jsx, AlertsPage.jsx, ThreatHuntingPage.jsx, settings, auth).
+- `/dashboard/src/pages/` : React UI dashboards (`DashboardPage.jsx`, `PreventionCenter.jsx`, `UserBehaviorAnalyticsPage.jsx`, `AlertsPage.jsx`, `ThreatHuntingPage.jsx`, settings, auth).
 - `/dashboard/src/components/` : Reusable visual widgets.
 - `/models/` : Serialized ML models (`.pkl`).
 

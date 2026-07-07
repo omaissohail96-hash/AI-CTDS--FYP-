@@ -11,13 +11,15 @@ from src.services.alert_service import AlertService
 from src.services.mitre_mapping_service import MITREMappingService
 from src.services.threat_explanation_service import ThreatExplanationService
 from src.services.user_behavior_analytics import UserBehaviorAnalyticsService
+from src.services.false_positive_service import FalsePositiveFramework, SignalSet
 from src.utils.correlation import CorrelationEngine
+
 
 class SecurityAgent:
     """
     Enterprise-grade AI Security Agent Orchestrator.
     Handles task routing, model invocation, threat intelligence enrichment,
-    and cross-vector correlation.
+    cross-vector correlation, and false positive prevention.
     """
 
     def __init__(self, tenant_id: str = "default"):
@@ -68,6 +70,7 @@ class SecurityAgent:
                 tasks.append(self._scan_network(data, db, workspace))
 
         results = await asyncio.gather(*tasks) if tasks else []
+
         correlation = CorrelationEngine.find_patterns(
             db,
             uuid.UUID(self.tenant_id),
@@ -75,15 +78,8 @@ class SecurityAgent:
             payload=data,
             entities=entities,
         )
-        base_analysis = self.scoring_engine.calculate_risk(
-            results,
-            threat_intel=intel_result,
-            correlation=correlation,
-        )
 
-        final_score = base_analysis["score"]
-        final_label = base_analysis["label"]
-        final_summary = base_analysis["summary"]
+        # ── UBA ─────────────────────────────────────────────────────────────
         behavior_risk = {"score": 0, "risk_level": "NORMAL", "explanation": None}
         if workspace:
             try:
@@ -101,14 +97,22 @@ class SecurityAgent:
                     "risk_level": uba_event.risk_level,
                     "explanation": uba_event.explanation,
                 }
-                if behavior_risk["score"] >= 61:
-                    final_score = min(100, final_score + min(20, behavior_risk["score"] // 5))
-                    final_summary = (
-                        f"{final_summary} User behavior analytics also indicates "
-                        f"{behavior_risk['risk_level'].lower()} account behavior."
-                    )
             except Exception as exc:
                 print(f"UBA SecurityAgent telemetry failed: {exc}")
+
+        # ── Weighted Ensemble Scoring ────────────────────────────────────────
+        base_analysis = self.scoring_engine.calculate_risk(
+            results,
+            threat_intel=intel_result,
+            correlation=correlation,
+            uba=behavior_risk if behavior_risk["score"] > 0 else None,
+        )
+
+        final_score = base_analysis["score"]
+        final_label = base_analysis["label"]
+        final_summary = base_analysis["summary"]
+        risk_contributions = base_analysis.get("contributions", {})
+        explainable_factors = base_analysis.get("explainable_factors", [])
 
         final_label = self._label_from_score(final_score)
 
@@ -121,18 +125,25 @@ class SecurityAgent:
             metadata=top_result.get("metadata") or {},
         )
 
-        # Generate alerts for high-risk detections
+        # ── False Positive Framework ─────────────────────────────────────────
+        fp_signals = FalsePositiveFramework.detect_signals(
+            risk_score=final_score,
+            ml_score=float(top_result.get("confidence", 0)),
+            threat_intel=intel_result,
+            correlation=correlation,
+            uba=behavior_risk if behavior_risk["score"] > 0 else None,
+        )
+
+        # ── Alert Generation ──────────────────────────────────────────────────
         generated_alert = None
         entity_type = self._determine_entity_type(input_type, data)
-        
-        if final_score >= 70 and workspace:  # Alert threshold
-            primary_entity = CorrelationEngine.primary_entity(entities, str(data) if isinstance(data, str) else "")
-            
+
+        if final_score >= 70 and workspace:
             generated_alert = AlertService.generate_alert(
                 db=db,
                 workspace_id=workspace.id,
-                user_id=None,  # Set by API layer if user context available
-                scan_history_id=None,  # Will be set after scan is logged
+                user_id=None,
+                scan_history_id=None,
                 scan_result=top_result,
                 entity=primary_entity or str(data),
                 entity_type=entity_type,
@@ -141,11 +152,49 @@ class SecurityAgent:
                 correlation_result=correlation,
             )
 
+        # ── Prevention Decision (FP-safe) ─────────────────────────────────────
+        should_block = False
+        queue_for_review = False
+        block_reason = ""
+        if workspace and primary_entity:
+            try:
+                should_block, queue_for_review, block_reason = FalsePositiveFramework.should_block(
+                    db=db,
+                    workspace_id=workspace.id,
+                    entity=primary_entity,
+                    entity_type=entity_type,
+                    risk_score=final_score,
+                    signals=fp_signals,
+                    threat_context={
+                        "intelligence_hit": bool(intel_result),
+                        "severity": top_result.get("severity", "LOW"),
+                        "ml_confidence": float(top_result.get("confidence", 0)),
+                    },
+                )
+
+                if queue_for_review and generated_alert:
+                    FalsePositiveFramework.create_review_queue_item(
+                        db=db,
+                        workspace_id=workspace.id,
+                        entity=primary_entity,
+                        entity_type=entity_type,
+                        risk_score=final_score,
+                        signals=fp_signals,
+                        risk_contributions=risk_contributions,
+                        alert_id=generated_alert.id,
+                    )
+            except Exception as exc:
+                print(f"FP framework evaluation failed: {exc}")
+
+        # ── Generate Explanation ──────────────────────────────────────────────
         response = {
             "agent_verdict": {
-                "score": round(final_score, 2),
+                "score": int(final_score),
                 "label": final_label,
-                "summary": final_summary
+                "summary": final_summary,
+                "contributions": risk_contributions,
+                "explainable_factors": explainable_factors,
+                "confidence_calibration": base_analysis.get("confidence_calibration", 0),
             },
             "vector_details": results,
             "intelligence": {
@@ -161,23 +210,32 @@ class SecurityAgent:
                 "generated": generated_alert is not None,
                 "alert_id": str(generated_alert.id) if generated_alert else None,
                 "severity": generated_alert.severity if generated_alert else None,
+                "in_review_queue": queue_for_review,
             } if workspace else None,
             "prevention_action": {
-                "triggered": False,
-                "mode": "IDS_ONLY",
-                "message": "Automatic blocking is disabled for this IDS workflow. Review recommended actions manually.",
+                "triggered": should_block,
+                "queued_for_review": queue_for_review,
+                "reason": block_reason,
+                "signals": fp_signals,
+                "message": (
+                    f"Automated block triggered: {block_reason}" if should_block
+                    else (f"Queued for human review: {block_reason}" if queue_for_review
+                          else "No automated action taken. Monitoring mode.")
+                ),
             } if workspace else None,
             "mitre_mappings": mitre_mappings,
             "user_behavior": behavior_risk,
             "tenant_id": self.tenant_id,
-            "status": "completed"
+            "status": "completed",
         }
+
         response["explanation"] = ThreatExplanationService.generate(
             input_type=input_type,
             payload=data,
             result=response,
             mitre_mappings=mitre_mappings,
         )
+
         return response
 
     def _severity_rank(self, label: str) -> int:
@@ -194,7 +252,6 @@ class SecurityAgent:
         return "SAFE"
 
     def _determine_entity_type(self, input_type: str, data: Any) -> str:
-        """Determine entity type from input"""
         if input_type == "url":
             return "url"
         elif input_type == "email":

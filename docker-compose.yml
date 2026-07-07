@@ -8,8 +8,70 @@ services:
     environment:
       - DATABASE_URL=sqlite:///./cyberguard.db
       - SECRET_KEY=demo_secret_key_change_me
+      - REDIS_ENABLED=True
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_ENABLED=True
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
     volumes:
       - ./cyberguard.db:/app/cyberguard.db
+    depends_on:
+      - redis
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: always
+
+  celery_worker:
+    build: .
+    command: celery -A src.workers.celery_app worker -Q high_priority,default,low_priority --loglevel=info
+    environment:
+      - DATABASE_URL=sqlite:///./cyberguard.db
+      - REDIS_ENABLED=True
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_ENABLED=True
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    volumes:
+      - ./cyberguard.db:/app/cyberguard.db
+    depends_on:
+      - backend
+      - redis
+    restart: always
+
+  celery_beat:
+    build: .
+    command: celery -A src.workers.celery_app beat --loglevel=info
+    environment:
+      - DATABASE_URL=sqlite:///./cyberguard.db
+      - REDIS_ENABLED=True
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_ENABLED=True
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    volumes:
+      - ./cyberguard.db:/app/cyberguard.db
+    depends_on:
+      - backend
+      - redis
+    restart: always
+
+  flower:
+    image: mher/flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - FLOWER_PORT=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery_worker
     restart: always
 
   dashboard:
@@ -21,3 +83,6 @@ services:
     depends_on:
       - backend
     restart: always
+
+volumes:
+  redis_data:

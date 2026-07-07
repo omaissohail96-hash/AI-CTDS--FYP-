@@ -12,12 +12,35 @@ CyberGuard AI is a production-grade, enterprise-ready cybersecurity SaaS platfor
 ## 🚀 Key Platform Capabilities
 
 *   **🧠 Asynchronous Security Orchestration**: Evaluates multi-vector payloads in parallel using python's `asyncio` for extremely low latency.
+*   **🤖 Hybrid Detection Engine**: Combines true Machine Learning (Random Forest, TF-IDF) with Rule-Based Regex Heuristics and active Threat Intelligence for zero-day and known threat detection.
 *   **🔌 Active Intrusion Prevention (IPS)**: Middleware intercepts client traffic and returns `403 Forbidden` for blocked entities. Expired blocks are cleared automatically by a background cron scheduler.
+*   **🔐 Enterprise Security Identity**: Implements granular Role-Based Access Control (RBAC) and Multi-Factor Authentication (TOTP/QR) for secure portal administration.
 *   **📊 User Behavior Analytics (UBA)**: Tracks IP logins, triggers travel alerts if geography jumps imply speeds `> 900 km/h` (Impossible Travel), monitors api usage spikes, and tracks credential brute-force attempts.
 *   **🔔 Real-Time Alert Escalation & Notification**: Translates detections into enterprise alerts. Alerts auto-escalate when intelligence checks trigger or when identical anomalies hit within 24 hours. Connects to SIEM tools via outbound webhooks and sends HTML emails to analysts.
 *   **📑 Audit Trail Compliance**: Auto-logs every state mutation (API Key generation, unblocking actions) in a secure audit table to satisfy SOC-2 criteria.
 *   **📈 Glassmorphism Portal**: Premium dashboard with live alert feeds, threat map visualization, mitigation playbooks, and one-click unblocking controls.
 *   **📄 Executive PDF Reporting**: Dependency-free PDF builder compiling security metrics and trend analysis for stakeholder reviews.
+
+---
+
+## 🔬 Detection Architecture Transparency
+
+CyberGuard AI employs a defense-in-depth strategy that blends AI models with deterministic rules.
+
+### Machine Learning (AI) Components
+*   **URL Phishing Detection**: Random Forest trained on lexical features.
+*   **Email Threat Detection**: Random Forest trained on email body payloads.
+*   **Web Attack Detection (ML)**: TF-IDF and N-Gram extraction with Random Forest classifying SQLi, XSS, and LFI.
+*   **User Behavior Analytics (UBA)**: Baseline profiling and anomaly deviation scoring.
+*   **Risk Scoring**: Weighted ensemble correlating multiple signals.
+
+### Rule-Based (Heuristic) Components
+*   **Threat Intelligence**: Static lookups against malicious IP/Domain databases.
+*   **Web Attack Detection (Regex)**: Deterministic regex heuristics that act as a fail-safe against ML evasion.
+*   **IPS Policies**: Hardcoded rate-limits and temporary IP blocks.
+
+**Why Hybrid?**
+Relying solely on AI for web attacks can lead to bypasses via payload obfuscation. CyberGuard AI correlates the high-confidence of regex heuristics with the fuzzy-matching power of ML. If an attacker bypasses the regex, the ML vectorizer still detects the malicious intent.
 
 ---
 
