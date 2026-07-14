@@ -1,3 +1,10 @@
+"""
+User Behavior Analytics (UBA) Endpoints
+
+RBAC:
+  All UBA routes → uba:read permission
+  (security_analyst, workspace_admin, super_admin)
+"""
 import uuid
 from typing import Any, Dict, List
 
@@ -5,7 +12,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from src.api import deps
-from src.models.models import UserBehaviorEvent, UserBehaviorProfile, Workspace
+from src.api.deps import RequirePermissions
+from src.models.models import User, UserBehaviorEvent, UserBehaviorProfile, Workspace
 from src.services.user_behavior_analytics import UserBehaviorAnalyticsService
 
 router = APIRouter()
@@ -15,6 +23,7 @@ router = APIRouter()
 async def get_uba_stats(
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("uba:read")),
 ) -> Dict[str, Any]:
     return UserBehaviorAnalyticsService.workspace_stats(db, workspace.id)
 
@@ -24,6 +33,7 @@ async def get_uba_users(
     limit: int = 50,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("uba:read")),
 ) -> List[Dict[str, Any]]:
     return UserBehaviorAnalyticsService.top_anomalous_users(
         db, workspace.id, limit=min(max(limit, 1), 200)
@@ -36,6 +46,7 @@ async def get_uba_anomalies(
     risk_level: str | None = Query(None),
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("uba:read")),
 ) -> List[Dict[str, Any]]:
     query = db.query(UserBehaviorEvent).filter(
         UserBehaviorEvent.workspace_id == workspace.id,
@@ -52,6 +63,7 @@ async def get_uba_user_detail(
     user_id: str,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("uba:read")),
 ) -> Dict[str, Any]:
     try:
         parsed_user_id = uuid.UUID(user_id)
@@ -64,6 +76,7 @@ async def get_uba_user_detail(
 async def get_uba_risk_scores(
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("uba:read")),
 ) -> List[Dict[str, Any]]:
     profiles = db.query(UserBehaviorProfile).filter(
         UserBehaviorProfile.workspace_id == workspace.id

@@ -15,6 +15,7 @@ async def get_explanation(
     scan_id: str,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: deps.AuthContext = Depends(deps.require_permissions("scans:read")),
 ) -> Dict[str, Any]:
     try:
         scan_uuid = uuid.UUID(scan_id)

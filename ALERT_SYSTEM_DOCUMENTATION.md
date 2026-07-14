@@ -2,6 +2,16 @@
 
 ## Overview
 
+This release adds a production-ready notification and monitoring layer to the existing alert system, including email delivery, structured logging, and monitoring endpoints while preserving the original alert workflow.
+
+## New Production Features
+
+- SMTP-based notification delivery for critical and high severity alerts
+- HTML email templates and branding support
+- Structured JSON logging to logs/cyberguard.log
+- Monitoring snapshot API at /api/v1/monitoring
+- Versioned API support under /api/v1 and /api/v2
+
 The Alert & Notification System is an enterprise-grade real-time threat alerting platform integrated with CyberGuard's multi-vector threat detection engine. It automatically generates, manages, and distributes alerts when security threats are detected.
 
 ## Architecture

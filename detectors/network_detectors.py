@@ -41,3 +41,12 @@ def predict_network_attacks(flow_features: dict):
         "confidence": round(confidence * 100, 2),
         "severity": severity
     }
+
+
+def predict_network(flow_features: dict):
+    result = predict_network_attacks(flow_features)
+    return result["attack_type"], result["confidence"]
+
+
+# Backward-compatible alias used by existing tests and scripts
+predict_network_model = predict_network

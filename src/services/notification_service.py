@@ -6,8 +6,11 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 import asyncio
 import json
+import logging
 from sqlalchemy.orm import Session
 from src.models.models import Alert
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationService:
@@ -234,9 +237,7 @@ CyberGuard AI - Enterprise Threat Detection
         
         if not NotificationService.SMTP_ENABLED:
             # Simulated sending
-            print(f"\n[EMAIL SIMULATION] To: {', '.join(recipient_emails)}")
-            print(f"Subject: {content['subject']}")
-            print(f"Body Preview: {content['text'][:200]}...")
+            logger.info("email_notification_simulated", extra={"recipients": recipient_emails, "subject": content['subject']})
             
             for email in recipient_emails:
                 results[email] = True
@@ -269,8 +270,7 @@ CyberGuard AI - Enterprise Threat Detection
         payload = NotificationService.prepare_alert_payload(alert)
         
         # Simulated webhook sending
-        print(f"\n[WEBHOOK SIMULATION] POST {webhook_url}")
-        print(f"Payload: {json.dumps(payload, indent=2, default=str)}")
+        logger.info("webhook_notification_simulated", extra={"url": webhook_url, "payload": payload})
         
         # Production implementation would use httpx or aiohttp
         # import httpx

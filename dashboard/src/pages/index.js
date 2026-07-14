@@ -13,3 +13,4 @@ export { default as ThreatHuntingPage } from './ThreatHuntingPage';
 export { default as UserBehaviorAnalyticsPage } from './UserBehaviorAnalyticsPage';
 export { default as SystemHealthPage } from './SystemHealthPage';
 export { default as ReviewQueuePage } from './ReviewQueuePage';
+export { default as MonitoringCenterPage } from './MonitoringCenterPage';

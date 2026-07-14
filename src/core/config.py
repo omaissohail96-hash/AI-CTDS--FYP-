@@ -1,3 +1,4 @@
+import os
 from typing import Dict, List
 from pydantic_settings import BaseSettings
 
@@ -25,7 +26,7 @@ class Settings(BaseSettings):
     COOKIE_DOMAIN: str = ""           # Empty = current domain
 
     # ── Database ─────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "sqlite:///./cyberguard.db"
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./cyberguard.db")
     # PostgreSQL connection pool settings (ignored for SQLite)
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10

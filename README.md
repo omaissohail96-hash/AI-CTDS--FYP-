@@ -70,6 +70,18 @@ Final_Year_Project/
 
 ---
 
+## 🚀 Production Upgrade Highlights
+
+This release adds a production-ready SaaS layer without removing any existing detection workflows:
+
+- PostgreSQL + SQLite dual support via environment-driven SQLAlchemy configuration
+- Alembic migration scaffolding with an initial schema migration
+- Threat explanation engine with human-readable analysis and MITRE mapping
+- SMTP-backed notification service for critical alerts and weekly summaries
+- Structured JSON logging with rotating file output and monitoring endpoints
+- Versioned API routes under /api/v1 and /api/v2
+- CI workflow for linting, testing, frontend build, and Docker validation
+
 ## 🚀 Quick Start
 
 ### 1. Prerequisites
@@ -93,9 +105,29 @@ pip install -r requirements.txt
 cd dashboard
 npm install
 cd ..
+
+# Configure environment variables
+Copy-Item .env.example .env
 ```
 
-### 3. Training & Preparing ML Models
+### 3. Database Configuration
+Use SQLite for local development or PostgreSQL for production:
+
+```powershell
+# SQLite (default)
+$env:DATABASE_URL = "sqlite:///./cyberguard.db"
+
+# PostgreSQL
+$env:DATABASE_URL = "postgresql+psycopg2://cyberguard:cyberguard@localhost:5432/cyberguard"
+```
+
+Run migrations:
+
+```powershell
+alembic upgrade head
+```
+
+### 4. Training & Preparing ML Models
 If the `/models/` directory is empty, download the datasets and run the training scripts:
 
 #### A. URL Phishing Detection
@@ -151,6 +183,16 @@ Use these credentials to log in to the administrative portal during demos:
 *   **Password**: `TestPassword123!`
 
 ---
+
+## 🔌 New API Endpoints
+
+- GET /api/v1/health
+- GET /api/v1/health/live
+- GET /api/v1/health/ready
+- GET /api/v1/monitoring
+- GET /api/v1/version
+- GET /api/v2/version
+- GET /api/v1/explanations/{scan_id}
 
 ## 🔌 API Integration Quick Example
 

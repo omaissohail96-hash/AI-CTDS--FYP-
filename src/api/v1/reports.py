@@ -14,6 +14,7 @@ async def download_security_report(
     hours: int = 0,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: deps.AuthContext = Depends(deps.require_permissions("scans:read")),
 ) -> Response:
     pdf_bytes = PDFReportService.generate_security_report(db, workspace, hours=hours)
     filename = f"cyberguard-security-report-{workspace.id}.pdf"

@@ -1,3 +1,10 @@
+"""
+Threat Hunting Endpoints
+
+RBAC:
+  GET /hunting/search → hunting:read permission
+  (security_analyst, workspace_admin, super_admin)
+"""
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -6,7 +13,8 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from src.api import deps
-from src.models.models import ScanHistory, Workspace
+from src.api.deps import RequirePermissions
+from src.models.models import ScanHistory, User, Workspace
 
 router = APIRouter()
 
@@ -54,6 +62,7 @@ async def search_threats(
     offset: int = 0,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("hunting:read")),
 ) -> Dict[str, Any]:
     query = db.query(ScanHistory).filter(ScanHistory.workspace_id == workspace.id)
 

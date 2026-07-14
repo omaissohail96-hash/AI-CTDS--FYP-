@@ -1,15 +1,23 @@
-import { WebAttackScanner } from '../components'
+import { motion } from 'framer-motion';
+import { ShieldAlert, Zap, CheckCircle } from 'lucide-react';
+import { WebAttackScanner, PageHeader } from '../components';
 
-function WebAttackPage() {
-    return (
-        <>
-            <div className="page-header">
-                <h1 className="page-title">Web Attack Detector</h1>
-                <p className="page-subtitle">Analyze websites for security threats</p>
-            </div>
-            <WebAttackScanner />
-        </>
-    )
-}
+const WebAttackPage = () => (
+  <div>
+    <PageHeader
+      icon={ShieldAlert}
+      iconColor="#FF3D57"
+      title="Web Attack Scanner"
+      subtitle="HTTP log parser detecting XSS, SQL injection, command injection, SSRF, and path traversal attacks autonomously"
+      badges={[
+        { label: 'OWASP Coverage', variant: 'success', icon: Zap },
+        { label: '96% Accuracy', variant: 'danger', icon: CheckCircle },
+      ]}
+    />
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <WebAttackScanner />
+    </motion.div>
+  </div>
+);
 
-export default WebAttackPage
+export default WebAttackPage;

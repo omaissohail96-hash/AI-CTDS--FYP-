@@ -1,15 +1,21 @@
 """
 Alert Management API Endpoints
 Real-time alert management and statistics
+
+RBAC:
+  GET  endpoints  → alerts:read
+  POST resolve    → alerts:write
+  POST escalate   → alerts:write
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import uuid
 
 from src.api import deps
-from src.models.models import Workspace, Alert
+from src.api.deps import RequirePermissions
+from src.models.models import Workspace, Alert, User
 from src.services.alert_service import AlertService, AlertSeverity
 from src.utils.audit import AuditLogger
 
@@ -37,7 +43,7 @@ class AlertResponse(BaseModel):
     notification_sent: bool
     email_sent: bool
     created_at: str
-    
+
     class Config:
         from_attributes = True
 
@@ -65,22 +71,22 @@ async def get_alerts(
     offset: int = Query(0, ge=0),
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("alerts:read")),
 ):
     """
     Get alerts with optional filtering
-    
+
     - **severity**: Filter by severity level (LOW, MEDIUM, HIGH, CRITICAL)
     - **resolved**: Filter by resolution status (true/false)
     - **limit**: Number of results (default 50, max 200)
     - **offset**: Pagination offset (default 0)
-    
+
     Returns paginated alert list with statistics
     """
     try:
-        # Validate severity if provided
         if severity and severity not in [AlertSeverity.LOW, AlertSeverity.MEDIUM, AlertSeverity.HIGH, AlertSeverity.CRITICAL]:
             raise HTTPException(status_code=400, detail="Invalid severity level")
-        
+
         alerts, total = AlertService.get_alerts(
             db,
             workspace.id,
@@ -89,13 +95,15 @@ async def get_alerts(
             limit=limit,
             offset=offset,
         )
-        
+
         return {
             "alerts": [AlertResponse.from_orm(alert).dict() for alert in alerts],
             "total": total,
             "limit": limit,
             "offset": offset,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch alerts: {str(e)}")
 
@@ -106,29 +114,24 @@ async def get_recent_alerts(
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("alerts:read")),
 ):
-    """
-    Get recent alerts from the last N hours
-    
-    - **hours**: Time period to fetch (default 24, max 7 days)
-    - **limit**: Maximum number of results (default 20)
-    
-    Returns recent alerts ordered by timestamp descending
-    """
+    """Get recent alerts from the last N hours"""
     try:
         from datetime import datetime, timedelta
-        
         cutoff_time = datetime.utcnow() - timedelta(hours=hours)
         alerts = db.query(Alert).filter(
             Alert.workspace_id == workspace.id,
             Alert.created_at >= cutoff_time,
         ).order_by(Alert.created_at.desc()).limit(limit).all()
-        
+
         return {
             "alerts": [AlertResponse.from_orm(alert).dict() for alert in alerts],
             "count": len(alerts),
             "hours": hours,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch recent alerts: {str(e)}")
 
@@ -138,23 +141,22 @@ async def get_critical_alerts(
     limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("alerts:read")),
 ):
-    """
-    Get all unresolved critical alerts
-    
-    Returns list of unresolved CRITICAL severity alerts
-    """
+    """Get all unresolved critical alerts"""
     try:
         alerts = db.query(Alert).filter(
             Alert.workspace_id == workspace.id,
             Alert.severity == AlertSeverity.CRITICAL,
             Alert.resolved_status == False,
         ).order_by(Alert.created_at.desc()).limit(limit).all()
-        
+
         return {
             "critical_alerts": [AlertResponse.from_orm(alert).dict() for alert in alerts],
             "count": len(alerts),
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch critical alerts: {str(e)}")
 
@@ -164,17 +166,14 @@ async def get_alert_stats(
     hours: int = Query(24, ge=1, le=168),
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("alerts:read")),
 ):
-    """
-    Get alert statistics for workspace
-    
-    - **hours**: Time period to analyze (default 24, max 7 days)
-    
-    Returns comprehensive alert statistics including severity distribution
-    """
+    """Get alert statistics for workspace"""
     try:
         stats = AlertService.get_alert_stats(db, workspace.id, time_hours=hours)
         return AlertStatsResponse(**stats)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch alert stats: {str(e)}")
 
@@ -183,20 +182,15 @@ async def get_alert_stats(
 async def get_unresolved_count(
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("alerts:read")),
 ):
-    """
-    Get count of unresolved alerts by severity
-    
-    Returns quick summary for alert badge counters
-    """
+    """Get count of unresolved alerts by severity"""
     try:
         counts = AlertService.get_unresolved_alert_count(db, workspace.id)
         total = sum(counts.values())
-        
-        return {
-            "total": total,
-            "by_severity": counts,
-        }
+        return {"total": total, "by_severity": counts}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch unresolved count: {str(e)}")
 
@@ -206,21 +200,18 @@ async def get_alert_detail(
     alert_id: str,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("alerts:read")),
 ):
-    """
-    Get detailed information about a specific alert
-    
-    Returns full alert details including indicators and recommended actions
-    """
+    """Get detailed information about a specific alert"""
     try:
         alert = db.query(Alert).filter(
             Alert.id == alert_id,
             Alert.workspace_id == workspace.id,
         ).first()
-        
+
         if not alert:
             raise HTTPException(status_code=404, detail="Alert not found")
-        
+
         return AlertResponse.from_orm(alert)
     except HTTPException:
         raise
@@ -234,32 +225,31 @@ async def resolve_alert(
     request: AlertResolveRequest,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
-    current_user = Depends(deps.get_current_user),
+    current_user: User = Depends(RequirePermissions("alerts:write")),
 ):
     """
-    Mark an alert as resolved
-    
-    Resolves the alert and logs the action to audit trail
+    Mark an alert as resolved. Requires alerts:write permission.
+    (security_analyst, workspace_admin, super_admin)
     """
     try:
         alert = db.query(Alert).filter(
             Alert.id == alert_id,
             Alert.workspace_id == workspace.id,
         ).first()
-        
+
         if not alert:
             raise HTTPException(status_code=404, detail="Alert not found")
-        
+
         if alert.resolved_status:
             raise HTTPException(status_code=400, detail="Alert is already resolved")
-        
+
         resolved_alert = AlertService.resolve_alert(
             db,
             alert.id,
             current_user.id,
             request.resolution_notes,
         )
-        
+
         return AlertResponse.from_orm(resolved_alert)
     except HTTPException:
         raise
@@ -272,32 +262,29 @@ async def escalate_alert(
     alert_id: str,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
-    current_user = Depends(deps.get_current_user),
+    current_user: User = Depends(RequirePermissions("alerts:write")),
 ):
     """
-    Escalate alert severity
-    
-    Increases alert severity by one level and logs the action
+    Escalate alert severity. Requires alerts:write permission.
+    (security_analyst, workspace_admin, super_admin)
     """
     try:
         alert = db.query(Alert).filter(
             Alert.id == alert_id,
             Alert.workspace_id == workspace.id,
         ).first()
-        
+
         if not alert:
             raise HTTPException(status_code=404, detail="Alert not found")
-        
-        # Escalate severity
+
         severity_order = [AlertSeverity.LOW, AlertSeverity.MEDIUM, AlertSeverity.HIGH, AlertSeverity.CRITICAL]
         current_idx = severity_order.index(alert.severity)
-        
+
         if current_idx < len(severity_order) - 1:
             new_severity = severity_order[current_idx + 1]
             old_severity = alert.severity
             alert.severity = new_severity
-            
-            # Log escalation
+
             from src.models.models import AlertHistory
             history = AlertHistory(
                 alert_id=alert.id,
@@ -308,8 +295,7 @@ async def escalate_alert(
                 new_severity=new_severity,
             )
             db.add(history)
-            
-            # Audit log
+
             AuditLogger.log(
                 db,
                 action="alert_escalated",
@@ -323,9 +309,9 @@ async def escalate_alert(
                     "to_severity": new_severity,
                 }
             )
-            
+
             db.commit()
-        
+
         return AlertResponse.from_orm(alert)
     except HTTPException:
         raise
@@ -340,33 +326,28 @@ async def search_alerts(
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("alerts:read")),
 ):
-    """
-    Search alerts by entity, title, or description
-    
-    - **query**: Search term (entity, domain, IP, etc.)
-    - **severity**: Optional severity filter
-    - **limit**: Maximum results
-    
-    Returns alerts matching the search criteria
-    """
+    """Search alerts by entity, title, or description"""
     try:
         search_filter = Alert.entity.ilike(f"%{query}%") | Alert.title.ilike(f"%{query}%") | Alert.description.ilike(f"%{query}%")
-        
+
         alerts_query = db.query(Alert).filter(
             Alert.workspace_id == workspace.id,
             search_filter,
         )
-        
+
         if severity:
             alerts_query = alerts_query.filter(Alert.severity == severity)
-        
+
         alerts = alerts_query.order_by(Alert.created_at.desc()).limit(limit).all()
-        
+
         return {
             "results": [AlertResponse.from_orm(alert).dict() for alert in alerts],
             "count": len(alerts),
             "query": query,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")

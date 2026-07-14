@@ -138,7 +138,7 @@ def register_user(
         hashed_password=security.get_password_hash(user_in.password),
         full_name=user_in.full_name,
         workspace_id=new_workspace.id,
-        role="admin",
+        role="workspace_admin",   # First user in a workspace is its admin
         refresh_token_version=0,
     )
     db.add(new_user)
@@ -177,6 +177,7 @@ def register_user(
         "access_token": access_token,
         "token_type": "bearer",
         "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "role": new_user.role,
     }
 
 
@@ -249,6 +250,7 @@ def login_access_token(
         "access_token": access_token,
         "token_type": "bearer",
         "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "role": user.role,
     }
 
 

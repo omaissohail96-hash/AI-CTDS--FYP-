@@ -13,10 +13,10 @@ import uvicorn
 from detectors.url_feature_extractor import extract_url_features
 from detectors.email_detector import predict_email_attack
 from detectors.network_detectors import predict_network_attacks
-from detectors.web_detector import predict_web_attack
 
 # Import Orchestration Layer
 from src.agent.orchestrator import SecurityAgent
+from src.services.web_attack_ml_service import WebAttackMLService
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -55,7 +55,7 @@ class NetworkScanRequest(BaseModel):
     flow_features: Dict[str, Any]
 
 class WebAttackRequest(BaseModel):
-    url: str
+    payload: str
 
 # ==================== RESPONSE MODELS ====================
 
@@ -154,16 +154,13 @@ async def scan_network(request: NetworkScanRequest):
 @app.post("/api/scan/web", response_model=ScanResponse)
 async def scan_web_attack(request: WebAttackRequest):
     try:
-        agent = SecurityAgent()
-        analysis = await agent.analyze_payload({"type": "url", "data": request.url})
-        result = analysis["vector_details"][0]
-        
+        result = WebAttackMLService.analyze_web(request.payload)
         return ScanResponse(
             success=True,
             attack_type=result["attack_type"],
             confidence=result["confidence"],
             severity=result["severity"],
-            details=analysis["agent_verdict"]
+            details=result.get("metadata"),
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

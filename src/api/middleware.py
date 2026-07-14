@@ -57,8 +57,17 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
         duration = time.time() - start_time
         metrics.increment(f"requests_{request.method}_{response.status_code}")
         metrics.observe("scan_duration_seconds", duration)
-        
+        logger.info(
+            "request_completed",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": round(duration * 1000, 2),
+            },
+        )
         return response
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -76,7 +85,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             limit = settings.RATE_LIMIT_AUTH_RPM
             
         if rate_limiter.is_rate_limited(client_ip, limit):
-            logger.warning(f"Rate limit exceeded for IP {client_ip} on path {path}")
+            logger.warning("rate_limited", extra={"ip": client_ip, "path": path, "limit": limit})
             return JSONResponse(
                 status_code=429,
                 content={"detail": "Too Many Requests"},

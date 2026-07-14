@@ -38,3 +38,12 @@ def predict_email_attack(subject: str, body: str):
         "confidence": round(confidence * 100, 2),
         "severity": severity
     }
+
+
+def predict_email(subject: str, body: str):
+    result = predict_email_attack(subject, body)
+    return result["attack_type"], result["confidence"]
+
+
+# Backward-compatible alias used by existing tests and scripts
+predict_email_model = predict_email

@@ -12,9 +12,10 @@ import {
     XAxis,
     YAxis
 } from 'recharts';
-import { Activity, AlertTriangle, BrainCircuit, Clock, Globe2, Users } from 'lucide-react';
+import { Activity, AlertTriangle, BrainCircuit, Clock, Globe2, Users, Eye } from 'lucide-react';
 
 import API_BASE from '../config/api';
+import PageHeader from '../components/PageHeader';
 
 const riskColors = {
     NORMAL: '#10b981',
@@ -106,13 +107,16 @@ const UserBehaviorAnalyticsPage = () => {
 
     return (
         <div className="fadeIn">
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">User Behavior Analytics</h1>
-                    <p className="page-subtitle">Continuous account behavior monitoring for insider threat and account takeover detection.</p>
-                </div>
-            </div>
-
+            <PageHeader
+                icon={Users}
+                iconColor="#5AA9FF"
+                title="User Behavior Analytics"
+                subtitle="Continuous account behavior monitoring for insider threat and account takeover detection."
+                badges={[
+                    { label: 'UBA Engine', variant: 'info' },
+                    { label: 'Live Monitoring', variant: 'success' },
+                ]}
+            />
             <div className="stats-grid">
                 {dashboardStats.map(({ label, value, icon: Icon }) => (
                     <div className="stat-card" key={label}>

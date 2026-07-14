@@ -1,3 +1,9 @@
+"""
+Stats / Analytics Endpoints
+
+RBAC:
+  All stat routes → scans:read permission
+"""
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
@@ -6,7 +12,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from src.api import deps
-from src.models.models import AuditLog, ScanHistory, Workspace
+from src.api.deps import RequirePermissions
+from src.models.models import AuditLog, ScanHistory, Workspace, User
 
 router = APIRouter()
 
@@ -20,6 +27,7 @@ VERDICT_NORMALIZATION = {
     "HIGH": "HIGH",
     "CRITICAL": "CRITICAL",
     "critical": "CRITICAL",
+    "MALICIOUS": "CRITICAL",
 }
 
 
@@ -57,6 +65,7 @@ async def get_threat_summary(
     hours: int = 24,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("scans:read")),
 ) -> Dict[str, Any]:
     if hours == 0:
         total_scans = db.query(ScanHistory).filter(ScanHistory.workspace_id == workspace.id).count()
@@ -201,12 +210,12 @@ async def get_threat_summary(
     }
 
 
-
 @router.get("/recent-scans")
 async def get_recent_scans(
     limit: int = 10,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("scans:read")),
 ) -> List[Dict[str, Any]]:
     scans = db.query(ScanHistory).filter(
         ScanHistory.workspace_id == workspace.id
@@ -237,14 +246,10 @@ async def get_threat_distribution(
     hours: int = 24,
     db: Session = Depends(deps.get_db),
     workspace: Workspace = Depends(deps.get_current_workspace),
+    _: User = Depends(RequirePermissions("scans:read")),
 ) -> Dict[str, Any]:
     if hours == 0:
-        buckets = {
-            "0-30": 0,
-            "31-60": 0,
-            "61-85": 0,
-            "86-100": 0,
-        }
+        buckets = {"0-30": 0, "31-60": 0, "61-85": 0, "86-100": 0}
         scans = db.query(ScanHistory.risk_score, ScanHistory.attack_type).filter(
             ScanHistory.workspace_id == workspace.id,
         ).all()
@@ -260,7 +265,6 @@ async def get_threat_distribution(
                 buckets["61-85"] += 1
             else:
                 buckets["86-100"] += 1
-
             if attack_type:
                 attack_type_counts[attack_type] = attack_type_counts.get(attack_type, 0) + 1
 
@@ -285,12 +289,7 @@ async def get_threat_distribution(
             "attack_type_distribution": [],
         }
 
-    buckets = {
-        "0-30": 0,
-        "31-60": 0,
-        "61-85": 0,
-        "86-100": 0,
-    }
+    buckets = {"0-30": 0, "31-60": 0, "61-85": 0, "86-100": 0}
     scans = db.query(ScanHistory.risk_score, ScanHistory.attack_type).filter(
         ScanHistory.workspace_id == workspace.id,
         ScanHistory.created_at >= time_window,
@@ -307,7 +306,6 @@ async def get_threat_distribution(
             buckets["61-85"] += 1
         else:
             buckets["86-100"] += 1
-
         if attack_type:
             attack_type_counts[attack_type] = attack_type_counts.get(attack_type, 0) + 1
 
@@ -321,4 +319,3 @@ async def get_threat_distribution(
             for key, value in sorted(attack_type_counts.items(), key=lambda item: item[1], reverse=True)[:8]
         ],
     }
-
