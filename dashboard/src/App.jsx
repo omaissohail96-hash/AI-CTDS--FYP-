@@ -20,7 +20,8 @@ import {
   UserBehaviorAnalyticsPage,
   SystemHealthPage,
   ReviewQueuePage,
-  MonitoringCenterPage
+  MonitoringCenterPage,
+  FeedbackDashboardPage
 } from './pages'
 
 const pageVariants = {
@@ -75,6 +76,7 @@ function App() {
         return hasRole(['super_admin', 'workspace_admin']) ? <SystemHealthPage /> : <AccessDenied />;
       case 'monitoring': return <MonitoringCenterPage />;
       case 'review_queue': return <ReviewQueuePage />;
+      case 'feedback': return <FeedbackDashboardPage />;
       case 'alerts': return <AlertsPage />;
       case 'prevention': return <PreventionCenter />;
       case 'hunting': return <ThreatHuntingPage />;

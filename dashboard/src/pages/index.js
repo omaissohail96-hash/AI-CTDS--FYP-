@@ -14,3 +14,4 @@ export { default as UserBehaviorAnalyticsPage } from './UserBehaviorAnalyticsPag
 export { default as SystemHealthPage } from './SystemHealthPage';
 export { default as ReviewQueuePage } from './ReviewQueuePage';
 export { default as MonitoringCenterPage } from './MonitoringCenterPage';
+export { default as FeedbackDashboardPage } from './FeedbackDashboardPage';

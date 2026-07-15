@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Network, ScanLine, CheckCircle, AlertTriangle, Loader } from 'lucide-react';
 import axios from 'axios';
 import API_BASE from '../config/api';
+import FeedbackButtons from './FeedbackButtons';
 
 const NetworkScanner = () => {
     const [pcapData, setPcapData] = useState('');
@@ -123,6 +124,7 @@ const NetworkScanner = () => {
                                 transition={{ duration: 0.8, ease: 'easeOut' }}
                             />
                         </div>
+                        <FeedbackButtons scanId={result.scan_id} />
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, ScanLine, CheckCircle, AlertTriangle, Loader } from 'lucide-react';
 import axios from 'axios';
 import API_BASE from '../config/api';
+import FeedbackButtons from './FeedbackButtons';
 
 const WebAttackScanner = () => {
     const [logData, setLogData] = useState('');
@@ -117,6 +118,7 @@ const WebAttackScanner = () => {
                                 transition={{ duration: 0.8, ease: 'easeOut' }}
                             />
                         </div>
+                        <FeedbackButtons scanId={result.scan_id} />
                     </motion.div>
                 )}
             </AnimatePresence>

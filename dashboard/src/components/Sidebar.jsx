@@ -15,6 +15,7 @@ const navGroups = [
       { id: 'monitoring',   label: 'Monitoring',     icon: Activity, roles: ['super_admin', 'workspace_admin', 'security_analyst', 'viewer'] },
       { id: 'alerts',       label: 'Alert Center',   icon: AlertCircle, roles: ['super_admin', 'workspace_admin', 'security_analyst', 'viewer'] },
       { id: 'review_queue', label: 'Review Queue',   icon: CheckSquare, roles: ['super_admin', 'workspace_admin', 'security_analyst', 'viewer'] },
+      { id: 'feedback',     label: 'AI Feedback',    icon: BrainCircuit, roles: ['super_admin', 'workspace_admin', 'security_analyst', 'viewer'] },
     ]
   },
   {

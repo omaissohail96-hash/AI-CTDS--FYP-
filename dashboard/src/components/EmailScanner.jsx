@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, ScanLine, CheckCircle, AlertTriangle, Loader, Paperclip } from 'lucide-react'
 import API_BASE from '../config/api'
 import axios from 'axios'
+import FeedbackButtons from './FeedbackButtons'
 
 const EmailScanner = () => {
     const [subject, setSubject] = useState('')
@@ -123,6 +124,7 @@ const EmailScanner = () => {
                                 transition={{ duration: 0.8, ease: 'easeOut' }}
                             />
                         </div>
+                        <FeedbackButtons scanId={result.scan_id} />
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Globe, ScanLine, Shield, AlertTriangle, CheckCircle, Loader } from 'lucide-react'
 import API_BASE from '../config/api'
 import axios from 'axios'
+import FeedbackButtons from './FeedbackButtons'
 
 const URLScanner = () => {
     const [url, setUrl] = useState('')
@@ -118,6 +119,7 @@ const URLScanner = () => {
                                 />
                             </div>
                         </div>
+                        <FeedbackButtons scanId={result.scan_id} />
                     </motion.div>
                 )}
             </AnimatePresence>

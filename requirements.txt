@@ -13,6 +13,7 @@ pandas
 dnspython
 email-validator
 requests
+httpx
 
 pyotp
 qrcode

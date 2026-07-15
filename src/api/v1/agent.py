@@ -110,6 +110,8 @@ async def agent_analyze(
                 key.successful_requests = (key.successful_requests or 0) + 1
 
         db.commit()
+        # The dashboard uses this immutable history ID to attach analyst feedback.
+        result["scan_id"] = str(scan_log.id)
         return result
 
     except HTTPException:
