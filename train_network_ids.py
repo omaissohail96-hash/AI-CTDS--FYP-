@@ -45,8 +45,8 @@ print("Accuracy:", accuracy_score(y_test, y_pred))
 print(classification_report(y_test, y_pred))
 
 # ---------- SAVE ----------
-#joblib.dump(model, "models/network_ids_model.pkl")
-#joblib.dump(X.columns.tolist(), "models/network_features.pkl")
-#joblib.dump(scaler, "models/network_scaler.pkl")
+joblib.dump(model, "models/network_ids_model.pkl")
+joblib.dump(X.columns.tolist(), "models/network_features.pkl")
+joblib.dump(scaler, "models/network_scaler.pkl")
 
 print("✅ Network IDS model saved (DEPLOYMENT SAFE)")

@@ -5,7 +5,11 @@ import API_BASE from '../config/api';
 export default function FeedbackButtons({ scanId }) {
   const [type, setType] = useState(null); const [comments, setComments] = useState(''); const [done, setDone] = useState(false);
   const submit = async (feedback_type) => {
-    try { await axios.post(`${API_BASE}/feedback`, { scan_id: scanId, feedback_type, comments: comments || null }, { withCredentials: true }); setDone(true); }
+    try { 
+        const token = localStorage.getItem('token');
+        await axios.post(`${API_BASE}/feedback`, { scan_id: scanId, feedback_type, comments: comments || null }, { headers: { Authorization: `Bearer ${token}` } }); 
+        setDone(true); 
+    }
     catch (e) { alert(e.response?.data?.detail || 'Feedback could not be submitted.'); }
   };
   if (!scanId || done) return done ? <p className="text-xs text-cyber-success mt-3">Feedback submitted for analyst review.</p> : null;

@@ -7,9 +7,25 @@ import API_BASE from '../config/api';
 const FeedbackDashboardPage = () => {
   const [stats, setStats] = useState({ total: 0, correct: 0, false_positives: 0, false_negatives: 0, approval_rate: 0, by_model: {} });
   const [items, setItems] = useState([]); const [status, setStatus] = useState('pending'); const [search, setSearch] = useState('');
-  const load = async () => { try { const [s, f] = await Promise.all([axios.get(`${API_BASE}/feedback/stats`, { withCredentials: true }), axios.get(`${API_BASE}/feedback`, { params: { status, search }, withCredentials: true })]); setStats(s.data); setItems(f.data); } catch (e) { console.error('Unable to load feedback', e); } };
+  const load = async () => { 
+      try { 
+          const token = localStorage.getItem('token');
+          const [s, f] = await Promise.all([
+              axios.get(`${API_BASE}/feedback/stats`, { headers: { Authorization: `Bearer ${token}` } }), 
+              axios.get(`${API_BASE}/feedback`, { params: { status, search }, headers: { Authorization: `Bearer ${token}` } })
+          ]); 
+          setStats(s.data); 
+          setItems(f.data); 
+      } catch (e) { 
+          console.error('Unable to load feedback', e); 
+      } 
+  };
   useEffect(() => { load(); }, [status]);
-  const action = async (id, verb) => { await axios.put(`${API_BASE}/feedback/${id}/${verb}`, {}, { withCredentials: true }); load(); };
+  const action = async (id, verb) => { 
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_BASE}/feedback/${id}/${verb}`, {}, { headers: { Authorization: `Bearer ${token}` } }); 
+      load(); 
+  };
   const cards = [['Total Feedback', stats.total, ShieldCheck], ['Correct Predictions', stats.correct, CheckCircle], ['False Positives', stats.false_positives, XCircle], ['False Negatives', stats.false_negatives, Clock]];
   return <div className="space-y-6">
     <PageHeader icon={ShieldCheck} iconColor="#36D399" title="AI Feedback Review" subtitle="Verified analyst feedback for offline model improvement. Production models never retrain automatically." badges={[]} />
