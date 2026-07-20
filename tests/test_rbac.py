@@ -20,56 +20,24 @@ Covers:
 
 import uuid
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
-# ── Patch heavyweight startup tasks BEFORE importing the app ─────────────────
-# Prevents the ML model loader and Celery tasks from blocking tests.
-patch("detectors.web_detector_ml.validate_web_attack_model", return_value=None).start()
-patch("src.utils.prevention_scheduler.PreventionScheduler.start_scheduler",
-      new_callable=lambda: lambda *a, **kw: MagicMock()).start()
-patch("src.workers.tasks.warm_redis_cache", MagicMock()).start()
 
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from src.models.models import Base, User, Workspace, APIKey
-from src.scripts.seed_rbac import seed_rbac
+from src.models.models import Base, User, Workspace, Role, Permission, RolePermission, APIKey
 from src.main import app
-from src.api.deps import get_db, _hash_api_key
 from src.core import security
-
-# ── Test Database (SQLite in-memory) ────────────────────────────────────────
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_rbac.db"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base.metadata.create_all(bind=engine)
-
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app, raise_server_exceptions=False)
+from src.scripts.seed_rbac import seed_rbac
+from src.api.deps import _hash_api_key
+from tests.conftest import TestingSessionLocal
 
 # ── Shared test state ────────────────────────────────────────────────────────
 _state: dict = {}
 
 
 @pytest.fixture(autouse=True)
-def setup_teardown():
+def setup_teardown(db):
     """Recreate a fresh DB with one workspace + one user per role before every test."""
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-
-    db = TestingSessionLocal()
     seed_rbac(db)
 
     ws = Workspace(id=uuid.uuid4(), name="RBAC Test Workspace")
@@ -111,7 +79,6 @@ def setup_teardown():
     yield
 
     db.close()
-    Base.metadata.drop_all(bind=engine)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -131,30 +98,30 @@ def _auth(role: str) -> dict:
 
 # ── Tests: RBAC on reports endpoint ─────────────────────────────────────────
 
-def test_unauthenticated_is_401():
+def test_unauthenticated_is_401(client, ):
     """Requests without any credentials must be rejected."""
     res = client.get("/api/v1/reports/security-report")
     assert res.status_code == 401
 
 
-def test_super_admin_can_access_reports():
+def test_super_admin_can_access_reports(client, ):
     """Super Admin has scans:read → can download reports."""
     res = client.get("/api/v1/reports/security-report", headers=_auth("super_admin"))
     # 200 (PDF) or 500 (PDF generation failure) are both valid — 401/403 are not
     assert res.status_code not in (401, 403), f"Unexpected: {res.status_code} {res.text}"
 
 
-def test_workspace_admin_can_access_reports():
+def test_workspace_admin_can_access_reports(client, ):
     res = client.get("/api/v1/reports/security-report", headers=_auth("workspace_admin"))
     assert res.status_code not in (401, 403), f"Unexpected: {res.status_code} {res.text}"
 
 
-def test_analyst_can_access_reports():
+def test_analyst_can_access_reports(client, ):
     res = client.get("/api/v1/reports/security-report", headers=_auth("security_analyst"))
     assert res.status_code not in (401, 403), f"Unexpected: {res.status_code} {res.text}"
 
 
-def test_viewer_can_access_reports():
+def test_viewer_can_access_reports(client, ):
     """Viewer has scans:read → should be allowed."""
     res = client.get("/api/v1/reports/security-report", headers=_auth("viewer"))
     assert res.status_code not in (401, 403), f"Unexpected: {res.status_code} {res.text}"
@@ -162,17 +129,17 @@ def test_viewer_can_access_reports():
 
 # ── Tests: RBAC on monitoring endpoint ──────────────────────────────────────
 
-def test_unauthenticated_monitoring_is_401():
+def test_unauthenticated_monitoring_is_401(client, ):
     res = client.get("/api/v1/monitoring")
     assert res.status_code == 401
 
 
-def test_super_admin_can_access_monitoring():
+def test_super_admin_can_access_monitoring(client, ):
     res = client.get("/api/v1/monitoring", headers=_auth("super_admin"))
     assert res.status_code not in (401, 403)
 
 
-def test_viewer_can_access_monitoring():
+def test_viewer_can_access_monitoring(client, ):
     """Viewers have alerts:read → monitoring allowed."""
     res = client.get("/api/v1/monitoring", headers=_auth("viewer"))
     assert res.status_code not in (401, 403)
@@ -180,30 +147,30 @@ def test_viewer_can_access_monitoring():
 
 # ── Tests: RBAC on API key management endpoint ───────────────────────────────
 
-def test_viewer_cannot_list_api_keys():
+def test_viewer_cannot_list_api_keys(client, ):
     """Viewers lack settings:write → must receive 403."""
     res = client.get("/api-keys/", headers=_auth("viewer"))
     assert res.status_code == 403
 
 
-def test_analyst_cannot_list_api_keys():
+def test_analyst_cannot_list_api_keys(client, ):
     """Analysts lack settings:write → must receive 403."""
     res = client.get("/api-keys/", headers=_auth("security_analyst"))
     assert res.status_code == 403
 
 
-def test_admin_can_list_api_keys():
+def test_admin_can_list_api_keys(client, ):
     """Workspace Admin has settings:write → allowed."""
     res = client.get("/api-keys/", headers=_auth("workspace_admin"))
     assert res.status_code not in (401, 403), f"Unexpected: {res.status_code} {res.text}"
 
 
-def test_super_admin_can_list_api_keys():
+def test_super_admin_can_list_api_keys(client, ):
     res = client.get("/api-keys/", headers=_auth("super_admin"))
     assert res.status_code not in (401, 403), f"Unexpected: {res.status_code} {res.text}"
 
 
-def test_analyst_cannot_create_api_key():
+def test_analyst_cannot_create_api_key(client, ):
     """POST /api-keys/create requires settings:write → analyst must get 403."""
     res = client.post(
         "/api-keys/create",
@@ -215,7 +182,7 @@ def test_analyst_cannot_create_api_key():
 
 # ── Tests: API Key authentication ────────────────────────────────────────────
 
-def test_api_key_bearer_auth_on_reports():
+def test_api_key_bearer_auth_on_reports(client, ):
     """API keys with scans:read should be able to access the reports endpoint."""
     raw_key = _state["raw_key"]
     headers = {"Authorization": f"Bearer {raw_key}"}
@@ -224,7 +191,7 @@ def test_api_key_bearer_auth_on_reports():
     assert res.status_code not in (401, 403), f"Unexpected: {res.status_code} {res.text}"
 
 
-def test_api_key_cannot_access_api_key_management():
+def test_api_key_cannot_access_api_key_management(client, ):
     """API keys don't have settings:write → must be rejected from key management."""
     raw_key = _state["raw_key"]
     headers = {"Authorization": f"Bearer {raw_key}"}
@@ -232,14 +199,14 @@ def test_api_key_cannot_access_api_key_management():
     assert res.status_code == 403
 
 
-def test_invalid_api_key_is_401():
+def test_invalid_api_key_is_401(client, ):
     """Garbage API key must return 401."""
     headers = {"Authorization": "Bearer cg_live_invalidkeyxxxxxxxxxxxxxxxxxxxxxxxxxxx"}
     res = client.get("/api/v1/reports/security-report", headers=headers)
     assert res.status_code == 401
 
 
-def test_missing_auth_is_401():
+def test_missing_auth_is_401(client, ):
     """Completely absent credentials must return 401."""
     res = client.get("/api/v1/reports/security-report")
     assert res.status_code == 401

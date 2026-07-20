@@ -4,17 +4,20 @@ import { Globe, ScanLine, Shield, AlertTriangle, CheckCircle, Loader } from 'luc
 import API_BASE from '../config/api'
 import axios from 'axios'
 import FeedbackButtons from './FeedbackButtons'
+import ScanLimitNotice, { getScanError } from './ScanLimitNotice'
 
 const URLScanner = () => {
     const [url, setUrl] = useState('')
     const [result, setResult] = useState(null)
     const [loading, setLoading] = useState(false)
+    const [scanError, setScanError] = useState(null)
 
     const handleScan = async (e) => {
         e.preventDefault()
         if (!url.trim()) return
         setLoading(true)
         setResult(null)
+        setScanError(null)
 
         try {
             const token = localStorage.getItem('token')
@@ -25,8 +28,7 @@ const URLScanner = () => {
             setResult(response.data)
         } catch (error) {
             console.error('Scan failed:', error)
-            alert('Scan failed. Please check your connection.')
-            setResult({ success: false, attack_type: 'ERROR', confidence: 0, severity: 'UNKNOWN' })
+            setScanError(getScanError(error))
         } finally {
             setLoading(false)
         }
@@ -74,6 +76,7 @@ const URLScanner = () => {
                     )}
                 </motion.button>
             </form>
+            <ScanLimitNotice error={scanError} />
 
             <AnimatePresence>
                 {result && (

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from src.models.models import Workspace
 from src.services.network_defense import NetworkDefenseService
 
+
 class DetectionService:
     """
     Service Layer wrapper for underlying ML models.
@@ -24,11 +25,15 @@ class DetectionService:
         return res
 
     @staticmethod
-    def analyze_email(email_data: Dict[str, Any]) -> Dict[str, Any]:
-        res = predict_email_attack(
-            email_data.get("subject", ""), 
-            email_data.get("body", "")
-        )
+    def analyze_email(email_data) -> Dict[str, Any]:
+        """Accept both plain strings (treat as body) and structured dicts."""
+        if isinstance(email_data, str):
+            subject = ""
+            body = email_data
+        else:
+            subject = email_data.get("subject", "")
+            body = email_data.get("body", "") or email_data.get("content", "")
+        res = predict_email_attack(subject, body)
         res["vector"] = "EMAIL"
         return res
 

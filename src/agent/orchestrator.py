@@ -172,6 +172,19 @@ class SecurityAgent:
                     },
                 )
 
+                if should_block:
+                    from src.services.prevention_engine import PreventionEngine
+                    PreventionEngine.create_block(
+                        db=db,
+                        workspace_id=workspace.id,
+                        entity=primary_entity,
+                        entity_type=entity_type,
+                        severity=top_result.get("severity", "HIGH"),
+                        reason=block_reason,
+                        alert_id=generated_alert.id if generated_alert else None,
+                        auto_generated=True,
+                    )
+
                 if queue_for_review and generated_alert:
                     FalsePositiveFramework.create_review_queue_item(
                         db=db,

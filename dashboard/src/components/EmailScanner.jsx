@@ -4,18 +4,21 @@ import { Mail, ScanLine, CheckCircle, AlertTriangle, Loader, Paperclip } from 'l
 import API_BASE from '../config/api'
 import axios from 'axios'
 import FeedbackButtons from './FeedbackButtons'
+import ScanLimitNotice, { getScanError } from './ScanLimitNotice'
 
 const EmailScanner = () => {
     const [subject, setSubject] = useState('')
     const [body, setBody] = useState('')
     const [result, setResult] = useState(null)
     const [loading, setLoading] = useState(false)
+    const [scanError, setScanError] = useState(null)
 
     const handleScan = async (e) => {
         e.preventDefault()
         if (!subject.trim() && !body.trim()) return
         setLoading(true)
         setResult(null)
+        setScanError(null)
 
         try {
             const token = localStorage.getItem('token')
@@ -26,8 +29,7 @@ const EmailScanner = () => {
             setResult(response.data)
         } catch (error) {
             console.error('Scan failed:', error)
-            alert('Scan failed. Please login again.')
-            setResult({ success: false, attack_type: 'ERROR', confidence: 0, severity: 'UNKNOWN' })
+            setScanError(getScanError(error))
         } finally {
             setLoading(false)
         }
@@ -85,6 +87,7 @@ const EmailScanner = () => {
                     )}
                 </motion.button>
             </form>
+            <ScanLimitNotice error={scanError} />
 
             <AnimatePresence>
                 {result && (

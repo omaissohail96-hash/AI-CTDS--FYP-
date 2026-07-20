@@ -4,16 +4,19 @@ import { Network, ScanLine, CheckCircle, AlertTriangle, Loader } from 'lucide-re
 import axios from 'axios';
 import API_BASE from '../config/api';
 import FeedbackButtons from './FeedbackButtons';
+import ScanLimitNotice, { getScanError } from './ScanLimitNotice';
 
 const NetworkScanner = () => {
     const [pcapData, setPcapData] = useState('');
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [scanError, setScanError] = useState(null);
 
     const handleScan = async (e) => {
         if (e) e.preventDefault();
         setLoading(true);
         setResult(null);
+        setScanError(null);
         try {
             const token = localStorage.getItem('token');
             let payloadData;
@@ -31,12 +34,7 @@ const NetworkScanner = () => {
             setResult(response.data);
         } catch (error) {
             console.error('Scan failed:', error);
-            if (error.response?.status === 401) {
-                alert('Session expired. Please login again.');
-            } else {
-                alert('Scan failed. Please check the network features format.');
-            }
-            setResult({ success: false, agent_verdict: { label: 'ERROR', score: 0 } });
+            setScanError(getScanError(error));
         } finally {
             setLoading(false);
         }
@@ -85,6 +83,7 @@ const NetworkScanner = () => {
                     )}
                 </motion.button>
             </form>
+            <ScanLimitNotice error={scanError} />
 
             <AnimatePresence>
                 {result && (

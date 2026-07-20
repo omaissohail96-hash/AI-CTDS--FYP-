@@ -7,6 +7,7 @@ import {
     AlertCircle, CheckCircle, Zap, Activity, Globe,
     Network, BrainCircuit, Target
 } from 'lucide-react';
+import { supabase } from '../config/supabaseClient';
 
 /* ── Shared InputField ───────────────────────────── */
 const InputField = ({ label, icon: Icon, type = 'text', placeholder, value, onChange, required, rightSlot, autoComplete }) => (
@@ -80,6 +81,17 @@ const LoginPage = ({ onLogin, onToggleForm }) => {
         } catch (err) {
             setError(err.response?.data?.detail || 'Invalid email or password. Please try again.');
         } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+        });
+        if (error) {
+            setError(error.message);
             setLoading(false);
         }
     };
@@ -286,19 +298,20 @@ const LoginPage = ({ onLogin, onToggleForm }) => {
 
                     {/* Social buttons */}
                     <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { label: 'Google', icon: '🔵' },
-                            { label: 'GitHub', icon: '⚫' },
-                        ].map(({ label, icon }) => (
-                            <button
-                                key={label}
-                                type="button"
-                                disabled
-                                className="flex items-center justify-center gap-2.5 py-3 rounded-xl border border-white/[0.07] bg-white/[0.02] text-[13px] text-slate-600 cursor-not-allowed hover:border-white/[0.12] transition-colors"
-                            >
-                                <span>{icon}</span> {label}
-                            </button>
-                        ))}
+                        <button
+                            type="button"
+                            onClick={handleGoogleLogin}
+                            className="flex items-center justify-center gap-2.5 py-3 rounded-xl border border-white/[0.07] bg-white/[0.02] text-[13px] text-white hover:border-white/[0.12] transition-colors"
+                        >
+                            <span>🔵</span> Google
+                        </button>
+                        <button
+                            type="button"
+                            disabled
+                            className="flex items-center justify-center gap-2.5 py-3 rounded-xl border border-white/[0.07] bg-white/[0.02] text-[13px] text-slate-600 cursor-not-allowed hover:border-white/[0.12] transition-colors"
+                        >
+                            <span>⚫</span> GitHub
+                        </button>
                     </div>
 
                     <p className="text-center text-[13px] text-slate-600">

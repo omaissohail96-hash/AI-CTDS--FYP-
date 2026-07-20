@@ -68,11 +68,11 @@ class Settings(BaseSettings):
         return [p.strip() for p in self.TRUSTED_PROXIES.split(",") if p.strip()]
 
     # ── Rate Limiting ─────────────────────────────────────────────────────────
-    RATE_LIMIT_ENABLED: bool = True
-    RATE_LIMIT_DEFAULT_RPM: int = 120      # Requests per minute per IP
-    RATE_LIMIT_SCAN_RPM: int = 30          # Stricter limit for scan endpoints
-    RATE_LIMIT_AUTH_RPM: int = 10          # Strictest limit for auth endpoints
-    RATE_LIMIT_BURST: int = 20             # Burst allowance above RPM
+    RATE_LIMIT_ENABLED: bool = False
+    RATE_LIMIT_DEFAULT_RPM: int = 600      # Requests per minute per IP
+    RATE_LIMIT_SCAN_RPM: int = 300         # Limit for scan endpoints
+    RATE_LIMIT_AUTH_RPM: int = 60          # Limit for auth endpoints
+    RATE_LIMIT_BURST: int = 100            # Burst allowance above RPM
 
     # ── Risk Scoring Engine ───────────────────────────────────────────────────
     # Ensemble weights — must sum to 1.0

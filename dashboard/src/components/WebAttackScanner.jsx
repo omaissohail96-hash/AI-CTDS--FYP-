@@ -4,16 +4,19 @@ import { ShieldAlert, ScanLine, CheckCircle, AlertTriangle, Loader } from 'lucid
 import axios from 'axios';
 import API_BASE from '../config/api';
 import FeedbackButtons from './FeedbackButtons';
+import ScanLimitNotice, { getScanError } from './ScanLimitNotice';
 
 const WebAttackScanner = () => {
     const [logData, setLogData] = useState('');
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [scanError, setScanError] = useState(null);
 
     const handleScan = async (e) => {
         if (e) e.preventDefault();
         setLoading(true);
         setResult(null);
+        setScanError(null);
         try {
             const token = localStorage.getItem('token');
             const response = await axios.post(`${API_BASE}/agent/analyze`,
@@ -23,8 +26,7 @@ const WebAttackScanner = () => {
             setResult(response.data);
         } catch (error) {
             console.error('Scan failed:', error);
-            alert('Scan failed. Session expired?');
-            setResult({ success: false, attack_type: 'ERROR', confidence: 0, severity: 'UNKNOWN' });
+            setScanError(getScanError(error));
         } finally {
             setLoading(false);
         }
@@ -73,6 +75,7 @@ const WebAttackScanner = () => {
                     )}
                 </motion.button>
             </form>
+            <ScanLimitNotice error={scanError} />
 
             <AnimatePresence>
                 {result && (

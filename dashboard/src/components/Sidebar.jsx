@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Globe, Mail, Activity, ShieldAlert, Settings, LogOut,
   Shield, AlertCircle, Lock, Search, BrainCircuit, ActivitySquare,
-  CheckSquare, Network, Crosshair, ChevronRight, Zap, User
+  CheckSquare, Network, Crosshair, ChevronRight, Zap, User, MapPin, Users
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -38,6 +38,8 @@ const navGroups = [
   {
     label: 'System',
     items: [
+      { id: 'ip_tracking', label: 'IP Tracking', icon: MapPin, roles: ['super_admin', 'workspace_admin', 'security_analyst', 'viewer'] },
+      { id: 'members', label: 'Members', icon: Users, roles: ['owner', 'admin'] },
       { id: 'settings', label: 'Settings & API', icon: Settings, roles: ['super_admin', 'workspace_admin'] },
     ]
   }

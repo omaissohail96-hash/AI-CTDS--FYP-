@@ -28,12 +28,21 @@ from src.api.middleware import (
     CSRFMiddleware
 )
 
-# Order of middleware is important (Outer to Inner)
+# Middlewares are added in reverse order of execution (last added is outermost).
+# Execution Order (Outermost to Innermost):
 # 1. TrustedProxy (resolves IP)
-app.add_middleware(TrustedProxyMiddleware)
-# 2. Security Headers
+# 2. CORS (handles preflight, adds headers)
+# 3. Security Headers
+# 4. Rate Limiting
+# 5. Prevention (IP block list)
+# 6. CSRF (double-submit cookie)
+# 7. Audit Logging (Logs final request/response)
+
+app.add_middleware(AuditMiddleware)
+app.add_middleware(CSRFMiddleware)
+app.add_middleware(PreventionMiddleware)
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
-# 3. CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -41,14 +50,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# 4. Rate Limiting
-app.add_middleware(RateLimitMiddleware)
-# 5. CSRF (double-submit cookie)
-app.add_middleware(CSRFMiddleware)
-# 6. Prevention (IP block list)
-app.add_middleware(PreventionMiddleware)
-# 7. Audit Logging (Logs final request/response)
-app.add_middleware(AuditMiddleware)
+app.add_middleware(TrustedProxyMiddleware)
 
 # Include Routers
 # Root-level health endpoints

@@ -27,58 +27,14 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 from src.models.models import Base, APIKey, APIKeyAuditLog, User, Workspace
 from src.main import app
-from src.api.deps import get_db, _hash_api_key, API_KEY_PREFIX
-
-# ── In-memory SQLite test database ──────────────────────────────────────────
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_api_keys.db"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base.metadata.create_all(bind=engine)
-
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-
-client = TestClient(app, raise_server_exceptions=False)
+from src.api.deps import _hash_api_key, API_KEY_PREFIX
+from tests.conftest import TestingSessionLocal
 
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
-@pytest.fixture(autouse=True)
-def clean_tables():
-    """Wipe tables between tests."""
-    yield
-    db = TestingSessionLocal()
-    db.query(APIKeyAuditLog).delete()
-    db.query(APIKey).delete()
-    db.query(User).delete()
-    db.query(Workspace).delete()
-    db.commit()
-    db.close()
-
-
-@pytest.fixture()
-def db():
-    s = TestingSessionLocal()
-    try:
-        yield s
-    finally:
-        s.close()
+# We don't need clean_tables and local db fixture since conftest.py's db drops all tables before each test.
 
 
 @pytest.fixture()
@@ -112,7 +68,7 @@ def workspace2(db):
 
 
 @pytest.fixture()
-def active_key(db, workspace):
+def active_key(client, db, workspace):
     """Insert a valid, active, non-expiring API key into the DB."""
     raw = f"{API_KEY_PREFIX}{'a' * 64}"
     key = APIKey(
@@ -132,7 +88,7 @@ def active_key(db, workspace):
 
 
 @pytest.fixture()
-def expired_key(db, workspace):
+def expired_key(client, db, workspace):
     raw = f"{API_KEY_PREFIX}{'b' * 64}"
     key = APIKey(
         id=uuid.uuid4(),
@@ -193,7 +149,7 @@ def other_workspace_key(db, workspace2):
 # ════════════════════════════════════════════════════════════════════════════
 # 1. Key generation format
 # ════════════════════════════════════════════════════════════════════════════
-def test_api_key_prefix():
+def test_api_key_prefix(client, ):
     """Generated keys must start with cg_live_ and have 64-char hex suffix."""
     from src.api.v1.api_keys import _generate_raw_key
     for _ in range(10):
@@ -207,13 +163,13 @@ def test_api_key_prefix():
 # ════════════════════════════════════════════════════════════════════════════
 # 2. Hashing – no plaintext stored
 # ════════════════════════════════════════════════════════════════════════════
-def test_hash_is_sha256():
+def test_hash_is_sha256(client, ):
     raw = f"{API_KEY_PREFIX}deadbeef"
     expected = hashlib.sha256(raw.encode()).hexdigest()
     assert _hash_api_key(raw) == expected
 
 
-def test_stored_key_is_hashed(db, workspace):
+def test_stored_key_is_hashed(client, db, workspace):
     """After creating a key, DB must NOT contain the raw key."""
     raw = f"{API_KEY_PREFIX}{'e' * 64}"
     from src.api.v1.api_keys import _hash_key
@@ -238,7 +194,7 @@ def test_stored_key_is_hashed(db, workspace):
 # ════════════════════════════════════════════════════════════════════════════
 # 3. Valid key via X-API-Key header → authenticated
 # ════════════════════════════════════════════════════════════════════════════
-def test_valid_key_via_x_api_key_header(active_key):
+def test_valid_key_via_x_api_key_header(client, active_key):
     raw, key_obj = active_key
     # /api/v1/agent/history uses get_current_workspace (API key OK)
     resp = client.get("/api/v1/agent/history", headers={"X-API-Key": raw})
@@ -254,7 +210,7 @@ def test_valid_key_via_x_api_key_header(active_key):
         fresh_db.close()
 
 
-def test_valid_key_via_bearer_header(active_key):
+def test_valid_key_via_bearer_header(client, active_key):
     raw, key_obj = active_key
     resp = client.get(
         "/api/v1/agent/history",
@@ -272,7 +228,7 @@ def test_valid_key_via_bearer_header(active_key):
 # ════════════════════════════════════════════════════════════════════════════
 # 4. Invalid / missing key → 401
 # ════════════════════════════════════════════════════════════════════════════
-def test_invalid_api_key_returns_401():
+def test_invalid_api_key_returns_401(client, ):
     resp = client.get(
         "/api-keys/",
         headers={"X-API-Key": f"{API_KEY_PREFIX}{'0' * 64}"},
@@ -280,12 +236,12 @@ def test_invalid_api_key_returns_401():
     assert resp.status_code == 401
 
 
-def test_missing_auth_returns_401():
+def test_missing_auth_returns_401(client, ):
     resp = client.get("/api-keys/")
     assert resp.status_code == 401
 
 
-def test_garbage_api_key_returns_401():
+def test_garbage_api_key_returns_401(client, ):
     resp = client.get("/api-keys/", headers={"X-API-Key": "not-a-real-key"})
     assert resp.status_code == 401
 
@@ -293,7 +249,7 @@ def test_garbage_api_key_returns_401():
 # ════════════════════════════════════════════════════════════════════════════
 # 5. Expired key → 401
 # ════════════════════════════════════════════════════════════════════════════
-def test_expired_key_returns_401(expired_key):
+def test_expired_key_returns_401(client, expired_key):
     raw, _ = expired_key
     resp = client.get("/api-keys/", headers={"X-API-Key": raw})
     assert resp.status_code == 401
@@ -303,7 +259,7 @@ def test_expired_key_returns_401(expired_key):
 # ════════════════════════════════════════════════════════════════════════════
 # 6. Revoked key → 401
 # ════════════════════════════════════════════════════════════════════════════
-def test_revoked_key_returns_401(revoked_key):
+def test_revoked_key_returns_401(client, revoked_key):
     raw, _ = revoked_key
     resp = client.get("/api-keys/", headers={"X-API-Key": raw})
     assert resp.status_code == 401
@@ -312,7 +268,7 @@ def test_revoked_key_returns_401(revoked_key):
 # ════════════════════════════════════════════════════════════════════════════
 # 7. Workspace isolation – key from workspace2 cannot reach workspace1 data
 # ════════════════════════════════════════════════════════════════════════════
-def test_cross_workspace_isolation(active_key, other_workspace_key):
+def test_cross_workspace_isolation(client, active_key, other_workspace_key):
     """
     A key from workspace2 authenticates to workspace2's data only.
     The /agent/history endpoint returns workspace-scoped data,
@@ -334,7 +290,7 @@ def test_cross_workspace_isolation(active_key, other_workspace_key):
 # ════════════════════════════════════════════════════════════════════════════
 # 8. Usage tracking
 # ════════════════════════════════════════════════════════════════════════════
-def test_usage_count_increments_on_valid_key(active_key):
+def test_usage_count_increments_on_valid_key(client, active_key):
     raw, key_obj = active_key
     initial_id = str(key_obj.id)
     for _ in range(3):
@@ -348,7 +304,7 @@ def test_usage_count_increments_on_valid_key(active_key):
         fresh_db.close()
 
 
-def test_last_used_updated_on_valid_key(active_key):
+def test_last_used_updated_on_valid_key(client, active_key):
     raw, key_obj = active_key
     client.get("/api-keys/", headers={"X-API-Key": raw})
     fresh_db = TestingSessionLocal()
@@ -359,7 +315,7 @@ def test_last_used_updated_on_valid_key(active_key):
         fresh_db.close()
 
 
-def test_last_used_ip_set(active_key):
+def test_last_used_ip_set(client, active_key):
     raw, key_obj = active_key
     client.get(
         "/api-keys/",
@@ -377,7 +333,7 @@ def test_last_used_ip_set(active_key):
 # ════════════════════════════════════════════════════════════════════════════
 # 9. Audit log created on key use
 # ════════════════════════════════════════════════════════════════════════════
-def test_audit_log_written_on_valid_key(active_key):
+def test_audit_log_written_on_valid_key(client, active_key):
     raw, key_obj = active_key
     client.get("/api-keys/", headers={"X-API-Key": raw})
     fresh_db = TestingSessionLocal()
@@ -395,7 +351,7 @@ def test_audit_log_written_on_valid_key(active_key):
 # ════════════════════════════════════════════════════════════════════════════
 # 10. Constant-time comparison – basic sanity
 # ════════════════════════════════════════════════════════════════════════════
-def test_constant_time_equal():
+def test_constant_time_equal(client, ):
     from src.api.deps import _constant_time_equal
     assert _constant_time_equal("abc", "abc") is True
     assert _constant_time_equal("abc", "xyz") is False
@@ -405,18 +361,21 @@ def test_constant_time_equal():
 # ════════════════════════════════════════════════════════════════════════════
 # 11. JWT auth still works (backward compatibility)
 # ════════════════════════════════════════════════════════════════════════════
-def test_jwt_auth_still_accepted(db, workspace):
+def test_jwt_auth_still_accepted(client, db, workspace):
     """
     Simulate a JWT-authenticated request.  We mock the JWT decode so we
     don't need a real user/password flow in this unit test.
     """
+    from src.scripts.seed_rbac import seed_rbac
+    seed_rbac(db)
+
     user = User(
         id=uuid.uuid4(),
         workspace_id=workspace.id,
         email="dev@test.com",
         hashed_password="hashed",
         full_name="Dev User",
-        role="admin",
+        role="workspace_admin",
         is_active=True,
     )
     db.add(user)
@@ -435,7 +394,7 @@ def test_jwt_auth_still_accepted(db, workspace):
 # ════════════════════════════════════════════════════════════════════════════
 # 12. Agent endpoint accepts API key (no JWT required)
 # ════════════════════════════════════════════════════════════════════════════
-def test_agent_analyze_accepts_api_key(active_key):
+def test_agent_analyze_accepts_api_key(client, active_key):
     """
     The /agent/analyze endpoint must respond to a valid API key without JWT.
     We mock the SecurityAgent to avoid loading real ML models, and patch

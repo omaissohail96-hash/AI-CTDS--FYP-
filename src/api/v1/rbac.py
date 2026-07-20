@@ -25,7 +25,8 @@ from src.api.deps import (
     _load_permissions,
     AuthContext,
 )
-from src.models.models import Permission, Role, RolePermission, User, Workspace
+from src.core.rbac import ROLE_DESCRIPTIONS, ROLE_PERMISSIONS, WorkspaceRole, normalize_workspace_role
+from src.models.models import Permission, Role, RolePermission, User, Workspace, WorkspaceUser
 from src.utils.audit import AuditLogger
 
 router = APIRouter()
@@ -40,6 +41,7 @@ class MyPermissionsResponse(BaseModel):
     email: str
     role: str
     permissions: List[str]
+    workspace_id: str
 
 
 class RoleDetail(BaseModel):
@@ -56,46 +58,31 @@ class RoleChangeRequest(BaseModel):
 
 @router.get("/my-permissions", response_model=MyPermissionsResponse)
 def get_my_permissions(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    ctx: AuthContext = Depends(get_auth_context),
 ) -> Any:
     """
     Return the calling user's role and full permission set.
     Used by the frontend to gate UI components.
     """
-    permissions = _load_permissions(current_user.role, db)
     return MyPermissionsResponse(
-        user_id=str(current_user.id),
-        email=current_user.email,
-        role=current_user.role or "viewer",
-        permissions=sorted(permissions),
+        user_id=str(ctx.user.id),
+        email=ctx.user.email,
+        role=ctx.role,
+        permissions=sorted(ctx.permissions),
+        workspace_id=str(ctx.workspace.id),
     )
 
 
 @router.get("/roles", response_model=List[RoleDetail])
 def list_roles(
-    db: Session = Depends(get_db),
-    _: User = Depends(RequirePermissions("system:admin")),
+    _: AuthContext = Depends(get_auth_context),
 ) -> Any:
     """
     List all roles and their associated permissions.
     Requires system:admin permission (super_admin only).
     """
-    roles = db.query(Role).all()
-    result = []
-    for role in roles:
-        perms = (
-            db.query(Permission.name)
-            .join(RolePermission, Permission.id == RolePermission.permission_id)
-            .filter(RolePermission.role_id == role.id)
-            .all()
-        )
-        result.append(RoleDetail(
-            name=role.name,
-            description=role.description,
-            permissions=sorted(p[0] for p in perms),
-        ))
-    return result
+    return [RoleDetail(name=role, description=ROLE_DESCRIPTIONS[role], permissions=sorted(perms))
+            for role, perms in ROLE_PERMISSIONS.items()]
 
 
 @router.put("/users/{user_id}/role", response_model=Dict[str, Any])
@@ -115,22 +102,21 @@ def change_user_role(
     - Users cannot demote themselves
     - Workspace isolation: can only change users in own workspace
     """
-    # Only workspace_admin+ can change roles
-    if current_user.role not in {"workspace_admin", "super_admin"}:
+    actor_role = ctx.role
+    if actor_role not in {WorkspaceRole.OWNER.value, WorkspaceRole.ADMIN.value}:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only workspace admins and super admins can change user roles.",
         )
 
-    new_role = payload.role
-    if new_role not in VALID_ROLES:
+    new_role = normalize_workspace_role(payload.role)
+    if payload.role.strip().lower() != new_role or new_role == WorkspaceRole.OWNER.value:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid role '{new_role}'. Valid roles: {sorted(VALID_ROLES)}.",
         )
 
-    # Workspace admins cannot grant super_admin
-    if current_user.role == "workspace_admin" and new_role == "super_admin":
+    if actor_role == WorkspaceRole.ADMIN.value and new_role == WorkspaceRole.ADMIN.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Workspace admins cannot grant the super_admin role.",
@@ -154,14 +140,21 @@ def change_user_role(
     if not target_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
 
-    if current_user.role != "super_admin":
-        if str(target_user.workspace_id) != str(ctx.workspace.id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot modify users outside your workspace.",
-            )
+    membership = db.query(WorkspaceUser).filter(
+        WorkspaceUser.workspace_id == ctx.workspace.id,
+        WorkspaceUser.user_id == target_user.id,
+    ).first()
+    if not membership:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot modify users outside your workspace.")
+    if membership.user_id == current_user.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot change your own role.")
+    if membership.role == WorkspaceRole.OWNER.value:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Transfer ownership to change the owner role.")
+    if actor_role == WorkspaceRole.ADMIN.value and membership.role == WorkspaceRole.ADMIN.value:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admins cannot modify another admin.")
 
-    old_role = target_user.role
+    old_role = membership.role
+    membership.role = new_role
     target_user.role = new_role
     db.commit()
 

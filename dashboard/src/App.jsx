@@ -21,7 +21,9 @@ import {
   SystemHealthPage,
   ReviewQueuePage,
   MonitoringCenterPage,
-  FeedbackDashboardPage
+  FeedbackDashboardPage,
+  IPTrackingPage,
+  WorkspaceMembersPage
 } from './pages'
 
 const pageVariants = {
@@ -38,8 +40,16 @@ const AccessDenied = () => (
   </div>
 );
 
+const PendingWorkspaceAccess = ({ onLogout }) => (
+  <div className="min-h-screen bg-[#09090B] flex flex-col items-center justify-center gap-4 p-8 text-center">
+    <div className="text-[#FF8C42] text-lg font-bold">Workspace access pending</div>
+    <p className="max-w-md text-sm text-slate-400">Your request has been sent to the workspace owner. You can access CyberGuard after the owner assigns your role.</p>
+    <button className="btn btn-primary" onClick={onLogout}>Sign out</button>
+  </div>
+);
+
 function App() {
-  const { isAuthenticated, login, logout, loading, hasRole, hasPermission } = useAuth();
+  const { isAuthenticated, login, logout, loading, hasRole, hasPermission, user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [view, setView] = useState('landing'); // landing, login, register, app
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -69,6 +79,10 @@ function App() {
     return <LandingPage onLogin={() => setView('login')} onRegister={() => setView('register')} />;
   }
 
+  if (user?.role === 'pending') {
+    return <PendingWorkspaceAccess onLogout={handleLogout} />;
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <DashboardPage />;
@@ -85,6 +99,8 @@ function App() {
       case 'email': return <EmailScannerPage />;
       case 'network': return <NetworkMonitorPage />;
       case 'web': return <WebAttackPage />;
+      case 'ip_tracking': return <IPTrackingPage />;
+      case 'members': return <WorkspaceMembersPage />;
       case 'settings': 
         return hasRole(['super_admin', 'workspace_admin']) ? <SettingsPage /> : <AccessDenied />;
       default: return <DashboardPage />;

@@ -3,6 +3,7 @@ import json
 import hashlib
 import uuid
 import logging
+import math
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
@@ -42,6 +43,12 @@ class InMemoryRateLimiter:
         self.requests[ip].append(now)
         return False
 
+    def retry_after(self, ip: str, window: int = 60) -> int:
+        requests = self.requests.get(ip, [])
+        if not requests:
+            return window
+        return max(1, math.ceil(window - (time.time() - requests[0])))
+
 rate_limiter = InMemoryRateLimiter()
 
 class TrustedProxyMiddleware(BaseHTTPMiddleware):
@@ -79,17 +86,31 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Determine limit based on endpoint
         path = request.url.path
         limit = settings.RATE_LIMIT_DEFAULT_RPM
-        if "/scan" in path:
+        if "/scan" in path or path.endswith("/agent/analyze"):
             limit = settings.RATE_LIMIT_SCAN_RPM
         elif "/auth" in path or "/login" in path:
             limit = settings.RATE_LIMIT_AUTH_RPM
             
         if rate_limiter.is_rate_limited(client_ip, limit):
+            retry_after = rate_limiter.retry_after(client_ip)
+            reset_at = datetime.utcfromtimestamp(time.time() + retry_after).isoformat() + "Z"
             logger.warning("rate_limited", extra={"ip": client_ip, "path": path, "limit": limit})
             return JSONResponse(
                 status_code=429,
-                content={"detail": "Too Many Requests"},
-                headers={"Retry-After": "60"}
+                content={"detail": {
+                    "code": "ip_rate_limit_exceeded",
+                    "message": "Too many requests from this connection. Please try again shortly.",
+                    "limit": limit,
+                    "remaining": 0,
+                    "reset_at": reset_at,
+                    "retry_after_seconds": retry_after,
+                }},
+                headers={
+                    "Retry-After": str(retry_after),
+                    "X-RateLimit-Limit": str(limit),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": reset_at,
+                }
             )
             
         return await call_next(request)
@@ -161,16 +182,17 @@ class PreventionMiddleware(BaseHTTPMiddleware):
             if blocked_entity:
                 blocked_entity.blocked_request_count += 1
                 db.commit()
-                db.close()
                 metrics.increment("active_blocks_hit")
                 
+                blocked_until_str = blocked_entity.blocked_until.isoformat()
+                db.close()
                 return JSONResponse(
                     status_code=403,
                     content={
                         "status": "blocked",
                         "reason": "Your IP address has been blocked due to suspicious activity",
                         "entity": client_ip,
-                        "blocked_until": blocked_entity.blocked_until.isoformat(),
+                        "blocked_until": blocked_until_str,
                     }
                 )
             db.close()

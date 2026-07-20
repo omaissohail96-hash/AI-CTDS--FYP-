@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Search, Shield, ChevronDown, Activity, Menu } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Header = ({ activeTab, onMenuClick }) => {
+  const { user } = useAuth();
   const [searchVal, setSearchVal] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
 
@@ -19,6 +21,8 @@ const Header = ({ activeTab, onMenuClick }) => {
     network:      'Network IDS',
     web:          'Web Attack Scanner',
     settings:     'Settings & API Keys',
+    ip_tracking:  'IP & Session Tracking',
+    members:      'Workspace Members',
   };
 
   const title = pageTitles[activeTab] || 'Dashboard';
@@ -183,9 +187,10 @@ const Header = ({ activeTab, onMenuClick }) => {
             fontSize: '0.68rem', fontWeight: 800, color: 'white',
             boxShadow: '0 0 12px rgba(255,106,61,0.4)',
           }}>
-            CG
+            {(user?.email || 'CG').slice(0, 2).toUpperCase()}
           </div>
-          <span style={{ fontSize: '0.84rem', color: '#CBD5E1', fontWeight: 600 }}>Analyst</span>
+          <span style={{ fontSize: '0.84rem', color: '#CBD5E1', fontWeight: 600 }}>{user?.role || 'Viewer'}</span>
+          {user?.workspace_id && <button type="button" onClick={() => navigator.clipboard.writeText(user.workspace_id)} title="Copy full workspace ID" style={{ fontSize: '0.64rem', color: '#FF8C42', background: 'transparent', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>Workspace {user.workspace_id.slice(0, 8)}</button>}
           <ChevronDown size={12} style={{ color: '#475569' }} />
         </motion.div>
       </div>

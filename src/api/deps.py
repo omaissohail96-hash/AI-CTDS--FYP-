@@ -50,9 +50,10 @@ from sqlalchemy.orm import Session
 from src.core.config import settings
 from src.core import security
 from src.core.database import SessionLocal
+from src.core.rbac import WorkspaceRole, normalize_workspace_role, permissions_for_role
 from src.models.models import (
     APIKey, APIKeyAuditLog, AuditLog, Permission, Role,
-    RolePermission, User, Workspace
+    RolePermission, User, Workspace, WorkspaceUser
 )
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,7 @@ class AuthContext:
     user: Optional[User] = None          # Present for JWT auth only
     api_key: Optional[APIKey] = None     # Present for API key auth only
     auth_method: str = "jwt"             # "jwt" | "api_key"
+    role: str = WorkspaceRole.VIEWER.value
     permissions: Set[str] = field(default_factory=set)  # Cached permission set
 
 
@@ -115,19 +117,16 @@ def _get_raw_api_key(request: Request, bearer_token: Optional[str]) -> Optional[
 
 
 def _load_permissions(role_name: Optional[str], db: Session) -> Set[str]:
-    """Load the permission set for a role from DB. Returns empty set on failure."""
-    if not role_name:
-        return set()
-    role = db.query(Role).filter(Role.name == role_name).first()
-    if not role:
-        return set()
-    perms = (
-        db.query(Permission.name)
-        .join(RolePermission, Permission.id == RolePermission.permission_id)
-        .filter(RolePermission.role_id == role.id)
-        .all()
-    )
-    return {p[0] for p in perms}
+    """Return centralized permissions while accepting legacy stored role names."""
+    return permissions_for_role(role_name)
+
+
+def _workspace_role(db: Session, workspace_id, user: User) -> str:
+    membership = db.query(WorkspaceUser).filter(
+        WorkspaceUser.workspace_id == workspace_id,
+        WorkspaceUser.user_id == user.id,
+    ).first()
+    return normalize_workspace_role(membership.role if membership else user.role)
 
 
 def _resolve_api_key(raw_key: str, db: Session, request: Request) -> AuthContext:
@@ -177,25 +176,39 @@ def _resolve_api_key(raw_key: str, db: Session, request: Request) -> AuthContext
 
     # ── Update usage stats ───────────────────────────────────────────────
     now = datetime.now(timezone.utc)
-    api_key.last_used = now
-    api_key.last_used_ip = _get_client_ip(request)
-    api_key.usage_count = (api_key.usage_count or 0) + 1
-    api_key.successful_requests = (api_key.successful_requests or 0) + 1
+    client_ip = _get_client_ip(request)
+    # Cache values we need after the update before any expiry risk
+    _cached_label = api_key.label
+    _cached_workspace_id = workspace.id
+    try:
+        from sqlalchemy import text as _text
+        db.execute(
+            _text(
+                "UPDATE api_keys SET last_used=:lu, last_used_ip=:ip, "
+                "usage_count=COALESCE(usage_count,0)+1, "
+                "successful_requests=COALESCE(successful_requests,0)+1 "
+                "WHERE key_hash=:kh"
+            ),
+            {"lu": now, "ip": client_ip, "kh": key_hash},
+        )
+    except Exception:
+        pass  # usage tracking is best-effort; never block auth
 
     _write_audit(db, api_key, workspace.id, request, "used", 200)
     db.commit()
 
     logger.info(
         "API key auth OK | label=%s workspace=%s ip=%s",
-        api_key.label,
-        workspace.id,
-        api_key.last_used_ip,
+        _cached_label,
+        _cached_workspace_id,
+        client_ip,
     )
     # API keys get scans:create permission by default (detection use case)
     return AuthContext(
         workspace=workspace,
         api_key=api_key,
         auth_method="api_key",
+        role="api_key",
         permissions={"scans:create", "scans:read"},
     )
 
@@ -207,20 +220,81 @@ def _resolve_jwt(token: str, db: Session) -> AuthContext:
         detail="Could not validate credentials.",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    user = None
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])
-        user_id: str = payload.get("sub")
-        token_type: str = payload.get("type")
+        user_id = payload.get("sub")
+        token_type = payload.get("type")
+        print(f"Decoded local JWT: sub={user_id}, type={token_type}")
         if user_id is None or token_type != "access":
+            print("user_id is None or token_type != access")
             raise credentials_exception
-    except JWTError:
-        raise credentials_exception
+        user = db.query(User).filter(User.id == uuid.UUID(user_id)).first()
+        print(f"Found user locally: {user}")
+    except JWTError as e:
+        print(f"JWTError: {e}")
+        try:
+            from supabase import create_client
+            supabase_url = "https://ssegsbvpqmnwmzvqetye.supabase.co"
+            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzZWdzYnZwcW1ud216dnFldHllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzM5MDgsImV4cCI6MjA5OTk0OTkwOH0.8b4r58X_I8jxO5Mp68SsRP-FFc1puuor9ULcFwVQ9uI"
+            supabase = create_client(supabase_url, supabase_key)
+            user_response = supabase.auth.get_user(token)
+            
+            if not user_response or not user_response.user:
+                raise credentials_exception
+            
+            user = db.query(User).filter(User.email == user_response.user.email).first()
+            if not user:
+                # Provision Google users according to the signup intent metadata.
+                from src.core.security import get_password_hash
+                metadata = user_response.user.user_metadata or {}
+                requested_workspace_id = metadata.get("workspace_id")
+                joining_workspace = None
+                if requested_workspace_id:
+                    try:
+                        joining_workspace = db.query(Workspace).filter(
+                            Workspace.id == uuid.UUID(requested_workspace_id)
+                        ).first()
+                    except ValueError:
+                        joining_workspace = None
+                    if not joining_workspace:
+                        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace ID was not found.")
 
-    user: Optional[User] = db.query(User).filter(User.id == uuid.UUID(user_id)).first()
+                new_workspace = joining_workspace or Workspace(
+                    name=metadata.get("workspace_name") or f"{user_response.user.email}'s Workspace"
+                )
+                if not joining_workspace:
+                    db.add(new_workspace)
+                    db.flush()
+                
+                user = User(
+                    email=user_response.user.email,
+                    hashed_password=get_password_hash(str(uuid.uuid4())),
+                    full_name=user_response.user.user_metadata.get("full_name", ""),
+                    role=WorkspaceRole.VIEWER.value if joining_workspace else WorkspaceRole.OWNER.value,
+                    workspace_id=new_workspace.id
+                )
+                db.add(user)
+                db.flush()
+                db.add(WorkspaceUser(
+                    workspace_id=new_workspace.id,
+                    user_id=user.id,
+                    role=WorkspaceRole.VIEWER.value if joining_workspace else WorkspaceRole.OWNER.value,
+                    status="pending" if joining_workspace else "active",
+                ))
+                db.commit()
+                db.refresh(user)
+        except Exception as e:
+            logger.error(f"Supabase auth failed: {e}")
+            print(f"Supabase auth failed: {e}")
+            raise credentials_exception
+
     if user is None or not user.is_active:
+        print(f"User is None or not active: {user}")
         raise credentials_exception
 
     if not user.workspace_id:
+        print("User has no workspace")
         raise HTTPException(status_code=400, detail="User is not assigned to a workspace.")
 
     workspace: Optional[Workspace] = (
@@ -229,12 +303,23 @@ def _resolve_jwt(token: str, db: Session) -> AuthContext:
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found.")
 
-    permissions = _load_permissions(user.role, db)
+    membership = db.query(WorkspaceUser).filter(
+        WorkspaceUser.workspace_id == workspace.id,
+        WorkspaceUser.user_id == user.id,
+    ).first()
+    if membership and membership.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Workspace access is pending owner approval.",
+        )
+    role = _workspace_role(db, workspace.id, user)
+    permissions = _load_permissions(role, db)
 
     return AuthContext(
         workspace=workspace,
         user=user,
         auth_method="jwt",
+        role=role,
         permissions=permissions,
     )
 
@@ -449,11 +534,11 @@ class RequirePermissions:
         # Re-load permissions if they are empty (shouldn't happen, but defensive)
         permissions = ctx.permissions
         if not permissions and ctx.user:
-            permissions = _load_permissions(ctx.user.role, db)
+            permissions = _load_permissions(ctx.role, db)
 
         for req_perm in self.required_permissions:
             if req_perm not in permissions:
-                role = ctx.user.role if ctx.user else "api_key"
+                role = ctx.role if ctx.user else "api_key"
                 logger.warning(
                     "Permission denied | user=%s role=%s required=%s endpoint=%s",
                     ctx.user.id if ctx.user else "api_key",
@@ -505,11 +590,12 @@ class RequireRoles:
                 detail="This endpoint requires user (JWT) authentication.",
             )
 
-        if ctx.user.role not in self.allowed_roles:
+        allowed_roles = {normalize_workspace_role(role) for role in self.allowed_roles}
+        if ctx.role != WorkspaceRole.OWNER.value and ctx.role not in allowed_roles:
             logger.warning(
                 "Role denied | user=%s role=%s allowed=%s endpoint=%s",
                 ctx.user.id,
-                ctx.user.role,
+                ctx.role,
                 self.allowed_roles,
                 request.url.path,
             )
@@ -537,3 +623,26 @@ def require_permissions(*perms: str):
 def require_roles(*roles: str):
     """Return a FastAPI dependency that requires one of the listed roles."""
     return RequireRoles(*roles)
+
+
+def require_owner():
+    return RequirePermissions("workspace:ownership:transfer")
+
+
+def require_admin():
+    return RequireRoles(WorkspaceRole.OWNER.value, WorkspaceRole.ADMIN.value)
+
+
+def require_analyst():
+    return RequireRoles(WorkspaceRole.OWNER.value, WorkspaceRole.ADMIN.value, WorkspaceRole.ANALYST.value)
+
+
+def require_operator():
+    return RequireRoles(
+        WorkspaceRole.OWNER.value, WorkspaceRole.ADMIN.value,
+        WorkspaceRole.ANALYST.value, WorkspaceRole.OPERATOR.value,
+    )
+
+
+def require_viewer():
+    return RequireRoles(*[role.value for role in WorkspaceRole])

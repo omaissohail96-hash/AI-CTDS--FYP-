@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import API_BASE from '../config/api';
+import { supabase } from '../config/supabaseClient';
 import {
     Shield, Mail, Lock, User, Building, ArrowRight,
     Loader, Eye, EyeOff, AlertCircle, CheckCircle, X
@@ -76,6 +77,7 @@ const RegisterPage = ({ onLogin, onToggleForm }) => {
         full_name:      '',
         email:          '',
         workspace_name: '',
+        workspace_id:   '',
         password:       '',
         confirmPassword:'',
     });
@@ -84,6 +86,7 @@ const RegisterPage = ({ onLogin, onToggleForm }) => {
     const [error,     setError]     = useState('');
     const [loading,   setLoading]   = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
+    const [workspaceMode, setWorkspaceMode] = useState('create');
 
     const strength = useMemo(() => getStrength(form.password), [form.password]);
     const meta     = strengthMeta[strength];
@@ -98,7 +101,8 @@ const RegisterPage = ({ onLogin, onToggleForm }) => {
         const errs = {};
         if (!form.full_name.trim())                          errs.full_name      = 'Full name is required.';
         if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) errs.email         = 'Enter a valid email address.';
-        if (!form.workspace_name.trim())                      errs.workspace_name = 'Workspace name is required.';
+        if (workspaceMode === 'create' && !form.workspace_name.trim()) errs.workspace_name = 'Workspace name is required.';
+        if (workspaceMode === 'join' && !form.workspace_id.trim())     errs.workspace_id = 'Workspace ID is required.';
         if (form.password.length < 8)                         errs.password      = 'Password must be at least 8 characters.';
         if (form.password !== form.confirmPassword)           errs.confirmPassword= 'Passwords do not match.';
         return errs;
@@ -113,6 +117,8 @@ const RegisterPage = ({ onLogin, onToggleForm }) => {
         setLoading(true);
         try {
             const { confirmPassword, ...payload } = form;
+            if (workspaceMode === 'create') delete payload.workspace_id;
+            else delete payload.workspace_name;
             const res = await axios.post(`${API_BASE}/register`, payload);
             const token = res.data.access_token;
             localStorage.setItem('token', token);
@@ -120,6 +126,29 @@ const RegisterPage = ({ onLogin, onToggleForm }) => {
         } catch (err) {
             setError(err.response?.data?.detail || 'Registration failed. Please try again.');
         } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleSignup = async () => {
+        setError('');
+        if (workspaceMode === 'join' && !form.workspace_id.trim()) {
+            setFieldErrors({ workspace_id: 'Workspace ID is required to request access.' });
+            return;
+        }
+        setLoading(true);
+
+        const { error: oauthError } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                data: workspaceMode === 'join'
+                    ? { workspace_id: form.workspace_id.trim() }
+                    : { workspace_name: form.workspace_name.trim() },
+            },
+        });
+
+        if (oauthError) {
+            setError(oauthError.message);
             setLoading(false);
         }
     };
@@ -247,16 +276,18 @@ const RegisterPage = ({ onLogin, onToggleForm }) => {
                             required
                             error={fieldErrors.full_name}
                         />
-                        <Field
-                            label="Workspace Name"
-                            icon={Building}
-                            name="workspace_name"
-                            placeholder="Acme Security Operations"
-                            value={form.workspace_name}
-                            onChange={change}
-                            required
-                            error={fieldErrors.workspace_name}
-                        />
+                        <div className="space-y-2">
+                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-[0.1em]">Workspace Access</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button type="button" onClick={() => setWorkspaceMode('create')} className={`py-3 rounded-xl border text-[12px] font-bold ${workspaceMode === 'create' ? 'border-[#FF6A3D]/50 bg-[#FF6A3D]/10 text-white' : 'border-white/[0.07] text-slate-500'}`}>Create workspace</button>
+                                <button type="button" onClick={() => setWorkspaceMode('join')} className={`py-3 rounded-xl border text-[12px] font-bold ${workspaceMode === 'join' ? 'border-[#FF6A3D]/50 bg-[#FF6A3D]/10 text-white' : 'border-white/[0.07] text-slate-500'}`}>Join workspace</button>
+                            </div>
+                        </div>
+                        {workspaceMode === 'create' ? (
+                            <Field label="Workspace Name" icon={Building} name="workspace_name" placeholder="Acme Security Operations" value={form.workspace_name} onChange={change} required error={fieldErrors.workspace_name} />
+                        ) : (
+                            <Field label="Workspace ID" icon={Building} name="workspace_id" placeholder="Paste the workspace ID shared by its owner" value={form.workspace_id} onChange={change} required error={fieldErrors.workspace_id} />
+                        )}
                         <Field
                             label="Business Email"
                             icon={Mail}
@@ -366,10 +397,11 @@ const RegisterPage = ({ onLogin, onToggleForm }) => {
                             <button
                                 key={label}
                                 type="button"
-                                disabled
-                                className="flex items-center justify-center gap-2.5 py-3 rounded-xl border border-white/[0.07] bg-white/[0.02] text-[13px] text-slate-600 cursor-not-allowed hover:border-white/[0.12] transition-colors"
+                                onClick={label === 'Google' ? handleGoogleSignup : undefined}
+                                disabled={label !== 'Google' || loading}
+                                className={`flex items-center justify-center gap-2.5 py-3 rounded-xl border border-white/[0.07] bg-white/[0.02] text-[13px] transition-colors ${label === 'Google' ? 'text-white hover:border-white/[0.12] disabled:cursor-not-allowed disabled:opacity-60' : 'text-slate-600 cursor-not-allowed'}`}
                             >
-                                <span>{icon}</span> {label}
+                                {label === 'Google' && loading ? <Loader size={15} className="animate-spin" /> : <span>{icon}</span>} {label === 'Google' && loading ? 'Redirecting...' : label}
                             </button>
                         ))}
                     </div>

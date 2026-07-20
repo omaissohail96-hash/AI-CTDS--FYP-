@@ -22,10 +22,14 @@ from src.utils.audit import AuditLogger
 router = APIRouter()
 
 
+from uuid import UUID
+from datetime import datetime
+from pydantic import ConfigDict
+
 class AlertResponse(BaseModel):
     """Alert response schema"""
-    id: str
-    workspace_id: str
+    id: UUID
+    workspace_id: UUID
     alert_type: str
     severity: str
     title: str
@@ -39,10 +43,10 @@ class AlertResponse(BaseModel):
     correlated_events: int
     recommended_action: str
     resolved_status: bool
-    resolved_at: Optional[str]
+    resolved_at: Optional[datetime]
     notification_sent: bool
     email_sent: bool
-    created_at: str
+    created_at: datetime
 
     class Config:
         from_attributes = True

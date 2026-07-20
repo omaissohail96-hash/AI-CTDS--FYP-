@@ -2,7 +2,8 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from src.core.config import settings
-from src.models.models import Base
+from src.models.models import Base, User, WorkspaceUser
+from src.core.rbac import WorkspaceRole, normalize_workspace_role
 
 # ── Engine setup ──────────────────────────────────────────────────────────────
 _pool_kwargs = {}
@@ -30,6 +31,7 @@ def initialize_database():
     _ensure_scan_history_schema()
     _ensure_uba_schema()
     _ensure_enterprise_schema()
+    _ensure_workspace_rbac_schema()
 
 
 def _ensure_scan_history_schema():
@@ -118,6 +120,13 @@ def _ensure_enterprise_schema():
                 connection.execute(text(
                     "ALTER TABLE users ADD COLUMN refresh_token_version INTEGER DEFAULT 0"
                 ))
+            for column_name, ddl in [
+                ("last_login_ip", "ALTER TABLE users ADD COLUMN last_login_ip VARCHAR"),
+                ("last_login_at", "ALTER TABLE users ADD COLUMN last_login_at DATETIME"),
+                ("login_count", "ALTER TABLE users ADD COLUMN login_count INTEGER DEFAULT 0"),
+            ]:
+                if column_name not in existing:
+                    connection.execute(text(ddl))
 
         # alerts: new columns
         if "alerts" in inspector.get_table_names():
@@ -153,6 +162,46 @@ def _ensure_enterprise_schema():
                     ))
                 except Exception:
                     pass
+
+
+def _ensure_workspace_rbac_schema():
+    """Create membership records for legacy installations without losing access."""
+    WorkspaceUser.__table__.create(bind=engine, checkfirst=True)
+    inspector = inspect(engine)
+    if "workspace_users" in inspector.get_table_names():
+        columns = {column["name"] for column in inspector.get_columns("workspace_users")}
+        if "status" not in columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE workspace_users ADD COLUMN status VARCHAR DEFAULT 'active'"))
+    session = SessionLocal()
+    try:
+        users = session.query(User).filter(User.workspace_id.isnot(None)).all()
+        existing = {
+            (str(row.workspace_id), str(row.user_id))
+            for row in session.query(WorkspaceUser).all()
+        }
+        owner_workspaces = {
+            str(row.workspace_id)
+            for row in session.query(WorkspaceUser).filter(WorkspaceUser.role == WorkspaceRole.OWNER.value).all()
+        }
+        for user in users:
+            key = (str(user.workspace_id), str(user.id))
+            if key in existing:
+                continue
+            role = normalize_workspace_role(user.role)
+            # A migrated workspace may only have one owner. Existing additional
+            # super admins remain administrators inside that workspace.
+            if role == WorkspaceRole.OWNER.value and str(user.workspace_id) in owner_workspaces:
+                role = WorkspaceRole.ADMIN.value
+            session.add(WorkspaceUser(workspace_id=user.workspace_id, user_id=user.id, role=role))
+            if role == WorkspaceRole.OWNER.value:
+                owner_workspaces.add(str(user.workspace_id))
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 def get_db():

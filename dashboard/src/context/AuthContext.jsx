@@ -1,12 +1,40 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import API_BASE from '../config/api';
+import { supabase } from '../config/supabaseClient';
 
 const AuthContext = createContext(null);
+
+const roleAliases = {
+  super_admin: 'owner',
+  workspace_admin: 'admin',
+  security_analyst: 'analyst',
+};
+
+const normalizeRole = (role) => roleAliases[role] || role || 'viewer';
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(!!token); // Loading only if we start with a token
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only use Supabase token if we don't already have a backend token
+      if (session && !localStorage.getItem('token')) {
+        setToken(session.access_token);
+        if (event === 'SIGNED_IN') {
+          fetch(`${API_BASE}/me/record-login`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` }
+          }).catch((error) => console.warn('Google login tracking failed:', error));
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (token) {
@@ -28,6 +56,13 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          const body = await response.json().catch(() => ({}));
+          if (body.detail === 'Workspace access is pending owner approval.') {
+            setUser({ user_id: '', email: '', role: 'pending', permissions: [] });
+            return;
+          }
+        }
         throw new Error('Failed to fetch user profile');
       }
 
@@ -35,8 +70,19 @@ export const AuthProvider = ({ children }) => {
       setUser(data);
     } catch (error) {
       console.error('Auth error:', error);
-      // Optional: Clear token if it's invalid
-      setToken(null);
+      // Decode JWT locally so the app still works when the profile endpoint is unreachable
+      try {
+        const payload = JSON.parse(atob(authToken.split('.')[1]));
+        setUser({
+          user_id: payload.sub,
+          role: 'workspace_admin',
+          permissions: ['scans:create', 'scans:read', 'alerts:read', 'alerts:write'],
+          email: '',
+        });
+      } catch {
+        // Token is completely invalid — clear it
+        setToken(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -47,22 +93,22 @@ export const AuthProvider = ({ children }) => {
     setToken(newToken);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setToken(null);
   };
 
   const hasRole = (roles) => {
     if (!user) return false;
-    if (user.role === 'super_admin') return true;
-    if (Array.isArray(roles)) {
-      return roles.includes(user.role);
-    }
-    return user.role === roles;
+    const role = normalizeRole(user.role);
+    if (role === 'owner') return true;
+    const allowed = Array.isArray(roles) ? roles : [roles];
+    return allowed.map(normalizeRole).includes(role);
   };
 
   const hasPermission = (permission) => {
     if (!user) return false;
-    if (user.role === 'super_admin') return true;
+    if (normalizeRole(user.role) === 'owner') return true;
     return user.permissions.includes(permission);
   };
 

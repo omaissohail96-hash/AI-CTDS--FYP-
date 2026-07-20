@@ -7,7 +7,7 @@ for API clients. Cookie-based auth is the browser session path.
 """
 
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -20,6 +20,8 @@ from src.core import security
 from src.core.config import settings
 from src.core.trusted_proxy import get_client_ip
 from src.models.models import User, Workspace, RefreshToken, UserMFA
+from src.models.models import WorkspaceUser
+from src.core.rbac import WorkspaceRole
 from src.services.user_behavior_analytics import UserBehaviorAnalyticsService
 
 router = APIRouter()
@@ -31,7 +33,8 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str
     full_name: str
-    workspace_name: str
+    workspace_name: Optional[str] = None
+    workspace_id: Optional[str] = None
 
 
 class Token(BaseModel):
@@ -92,6 +95,36 @@ def _store_refresh_token(db: Session, user: User, token: str, request: Request) 
     return refresh_entry
 
 
+def _record_successful_login(db: Session, user: User, request: Request) -> None:
+    """Persist a successful sign-in for both password and federated auth."""
+    client_ip = get_client_ip(request)
+    user.last_login_ip = client_ip
+    user.last_login_at = datetime.utcnow()
+    user.login_count = (user.login_count or 0) + 1
+    db.commit()
+
+    from src.utils.audit import AuditLogger
+    AuditLogger.log(
+        db,
+        action="login_success",
+        module="auth",
+        workspace_id=user.workspace_id,
+        user_id=user.id,
+        metadata={"ip": client_ip},
+    )
+    try:
+        UserBehaviorAnalyticsService.record_event(
+            db=db,
+            workspace_id=user.workspace_id,
+            user_id=user.id,
+            event_type="login_success",
+            ip_address=client_ip,
+            endpoint_accessed=str(request.url.path),
+        )
+    except Exception as exc:
+        print(f"UBA login telemetry failed: {exc}")
+
+
 def _revoke_refresh_token(db: Session, token: str) -> bool:
     """Mark a refresh token as revoked by its hash."""
     from datetime import datetime
@@ -118,7 +151,7 @@ def register_user(
     db: Session = Depends(deps.get_db),
     user_in: UserRegister,
 ) -> Any:
-    """Register a new user and create their workspace."""
+    """Register a workspace owner or a pending member of an existing workspace."""
     user = db.query(User).filter(User.email == user_in.email).first()
     if user:
         raise HTTPException(
@@ -126,11 +159,24 @@ def register_user(
             detail="The user with this username already exists in the system.",
         )
 
-    # 1. Create Workspace
-    new_workspace = Workspace(name=user_in.workspace_name)
-    db.add(new_workspace)
-    db.commit()
-    db.refresh(new_workspace)
+    joining_workspace = None
+    if user_in.workspace_id:
+        try:
+            workspace_uuid = uuid.UUID(user_in.workspace_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid workspace ID.")
+        joining_workspace = db.query(Workspace).filter(Workspace.id == workspace_uuid).first()
+        if not joining_workspace:
+            raise HTTPException(status_code=404, detail="Workspace ID was not found.")
+    elif not (user_in.workspace_name or "").strip():
+        raise HTTPException(status_code=422, detail="Workspace name is required when creating a workspace.")
+
+    # 1. Create a workspace only for users who explicitly create one.
+    new_workspace = joining_workspace or Workspace(name=user_in.workspace_name.strip())
+    if not joining_workspace:
+        db.add(new_workspace)
+        db.commit()
+        db.refresh(new_workspace)
 
     # 2. Create User
     new_user = User(
@@ -138,10 +184,17 @@ def register_user(
         hashed_password=security.get_password_hash(user_in.password),
         full_name=user_in.full_name,
         workspace_id=new_workspace.id,
-        role="workspace_admin",   # First user in a workspace is its admin
+        role=WorkspaceRole.VIEWER.value if joining_workspace else WorkspaceRole.OWNER.value,
         refresh_token_version=0,
     )
     db.add(new_user)
+    db.flush()
+    db.add(WorkspaceUser(
+        workspace_id=new_workspace.id,
+        user_id=new_user.id,
+        role=WorkspaceRole.VIEWER.value if joining_workspace else WorkspaceRole.OWNER.value,
+        status="pending" if joining_workspace else "active",
+    ))
     db.commit()
     db.refresh(new_user)
 
@@ -177,7 +230,8 @@ def register_user(
         "access_token": access_token,
         "token_type": "bearer",
         "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        "role": new_user.role,
+        "role": "pending" if joining_workspace else new_user.role,
+        "workspace_access": "pending" if joining_workspace else "active",
     }
 
 
@@ -224,33 +278,28 @@ def login_access_token(
     _store_refresh_token(db, user, refresh_token, request)
     _set_auth_cookies(response, access_token, refresh_token)
 
-    # Audit + UBA
-    from src.utils.audit import AuditLogger
-    AuditLogger.log(
-        db,
-        action="login_success",
-        module="auth",
-        workspace_id=user.workspace_id,
-        user_id=user.id,
-        metadata={"ip": get_client_ip(request)},
-    )
-    try:
-        UserBehaviorAnalyticsService.record_event(
-            db=db,
-            workspace_id=user.workspace_id,
-            user_id=user.id,
-            event_type="login_success",
-            ip_address=get_client_ip(request),
-            endpoint_accessed=str(request.url.path),
-        )
-    except Exception as exc:
-        print(f"UBA login telemetry failed: {exc}")
+    _record_successful_login(db, user, request)
 
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "role": user.role,
+    }
+
+
+@router.post("/me/record-login")
+def record_federated_login(
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> dict[str, Any]:
+    """Record the completed OAuth sign-in initiated by the dashboard."""
+    _record_successful_login(db, current_user, request)
+    return {
+        "last_login_ip": current_user.last_login_ip,
+        "last_login_at": current_user.last_login_at.isoformat() if current_user.last_login_at else None,
+        "login_count": current_user.login_count,
     }
 
 
@@ -364,3 +413,159 @@ def _revoke_all_user_tokens(db: Session, user_id: uuid.UUID) -> int:
         t.revoked_at = now
     db.commit()
     return len(tokens)
+
+
+# ── Account / Session Info Endpoints ─────────────────────────────────────────
+
+@router.get("/me")
+def get_current_user_info(
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """Return the authenticated user's profile including last login IP."""
+    return {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "role": current_user.role,
+        "is_active": current_user.is_active,
+        "workspace_id": str(current_user.workspace_id),
+        "last_login_ip": current_user.last_login_ip,
+        "last_login_at": current_user.last_login_at.isoformat() if current_user.last_login_at else None,
+        "login_count": current_user.login_count or 0,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+        "current_request_ip": get_client_ip(request),
+    }
+
+
+@router.get("/me/sessions")
+def get_active_sessions(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Return all active (non-revoked) login sessions for the current user.
+    Shows the IP address, user-agent, and creation time for each session.
+    """
+    sessions = db.query(RefreshToken).filter(
+        RefreshToken.user_id == current_user.id,
+        RefreshToken.revoked == False,
+    ).order_by(RefreshToken.created_at.desc()).all()
+
+    return {
+        "total_active_sessions": len(sessions),
+        "sessions": [
+            {
+                "session_id": str(s.id),
+                "ip_address": s.client_ip,
+                "user_agent": s.user_agent,
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+                "expires_at": s.expires_at.isoformat() if s.expires_at else None,
+            }
+            for s in sessions
+        ],
+    }
+
+
+@router.get("/me/login-history")
+def get_login_history(
+    limit: int = 50,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Return the login history for the current user from UBA events.
+    Shows each login attempt (success/failure) with IP address and timestamp.
+    """
+    from src.models.models import UserBehaviorEvent
+    events = (
+        db.query(UserBehaviorEvent)
+        .filter(
+            UserBehaviorEvent.user_id == current_user.id,
+            UserBehaviorEvent.event_type.in_(["login_success", "login_failed"]),
+        )
+        .order_by(UserBehaviorEvent.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
+
+    return {
+        "user_id": str(current_user.id),
+        "email": current_user.email,
+        "last_login_ip": current_user.last_login_ip,
+        "last_login_at": current_user.last_login_at.isoformat() if current_user.last_login_at else None,
+        "login_count": current_user.login_count or 0,
+        "history": [
+            {
+                "event_type": e.event_type,
+                "ip_address": e.ip_address,
+                "timestamp": e.timestamp.isoformat() if e.timestamp else None,
+                "risk_level": e.risk_level,
+                "anomaly_score": e.anomaly_score,
+            }
+            for e in events
+        ],
+    }
+
+
+@router.get("/me/api-activity")
+def get_api_consumer_activity(
+    limit: int = 100,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Return recent API key usage logs for all keys in the current workspace.
+    This lets workspace owners see which IPs are calling their API.
+    """
+    from src.models.models import APIKey, APIKeyAuditLog as AuditLog_
+    workspace_id = str(current_user.workspace_id)
+
+    # Get all API keys for this workspace
+    api_keys = db.query(APIKey).filter(
+        APIKey.workspace_id == current_user.workspace_id
+    ).all()
+
+    key_map = {str(k.id): k.label for k in api_keys}
+
+    logs = (
+        db.query(AuditLog_)
+        .filter(AuditLog_.workspace_id == workspace_id)
+        .order_by(AuditLog_.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    # Aggregate unique IPs per key
+    ip_summary: dict = {}
+    for log in logs:
+        key_label = key_map.get(log.api_key_id, f"key:{log.api_key_id[:8]}…")
+        ip = log.client_ip or "unknown"
+        bucket = ip_summary.setdefault(key_label, {"ips": set(), "total_requests": 0})
+        bucket["ips"].add(ip)
+        bucket["total_requests"] += 1
+
+    return {
+        "workspace_id": workspace_id,
+        "total_api_keys": len(api_keys),
+        "recent_activity": [
+            {
+                "api_key_label": key_map.get(log.api_key_id, f"key:{log.api_key_id[:8]}…"),
+                "client_ip": log.client_ip,
+                "endpoint": log.endpoint,
+                "method": log.method,
+                "status_code": log.status_code,
+                "event": log.event,
+                "timestamp": log.created_at.isoformat() if log.created_at else None,
+            }
+            for log in logs
+        ],
+        "unique_ips_per_key": {
+            label: {
+                "unique_ips": list(data["ips"]),
+                "total_requests": data["total_requests"],
+            }
+            for label, data in ip_summary.items()
+        },
+    }

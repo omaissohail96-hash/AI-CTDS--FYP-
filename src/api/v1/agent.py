@@ -13,6 +13,7 @@ workspace isolation is always enforced.
 
 from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import text as _sql_text
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -102,12 +103,18 @@ async def agent_analyze(
         )
         db.add(scan_log)
 
-        # 4. Increment API key success counter (if API key auth)
+        # 4. Increment API key success counter (if API key auth) – best-effort
         if auth.api_key:
-            from src.models.models import APIKey
-            key = db.query(APIKey).filter(APIKey.id == auth.api_key.id).first()
-            if key:
-                key.successful_requests = (key.successful_requests or 0) + 1
+            try:
+                db.execute(
+                    _sql_text(
+                        "UPDATE api_keys SET successful_requests=COALESCE(successful_requests,0)+1 "
+                        "WHERE key_hash=:kh"
+                    ),
+                    {"kh": auth.api_key.key_hash},
+                )
+            except Exception:
+                pass
 
         db.commit()
         # The dashboard uses this immutable history ID to attach analyst feedback.
@@ -119,22 +126,28 @@ async def agent_analyze(
         # but increment the API key failure counter first.
         if auth.api_key:
             try:
-                from src.models.models import APIKey
-                key = db.query(APIKey).filter(APIKey.id == auth.api_key.id).first()
-                if key:
-                    key.failed_requests = (key.failed_requests or 0) + 1
-                    db.commit()
+                db.execute(
+                    _sql_text(
+                        "UPDATE api_keys SET failed_requests=COALESCE(failed_requests,0)+1 "
+                        "WHERE key_hash=:kh"
+                    ),
+                    {"kh": auth.api_key.key_hash},
+                )
+                db.commit()
             except Exception:
                 pass
         raise
     except Exception as e:
         if auth.api_key:
             try:
-                from src.models.models import APIKey
-                key = db.query(APIKey).filter(APIKey.id == auth.api_key.id).first()
-                if key:
-                    key.failed_requests = (key.failed_requests or 0) + 1
-                    db.commit()
+                db.execute(
+                    _sql_text(
+                        "UPDATE api_keys SET failed_requests=COALESCE(failed_requests,0)+1 "
+                        "WHERE key_hash=:kh"
+                    ),
+                    {"kh": auth.api_key.key_hash},
+                )
+                db.commit()
             except Exception:
                 pass
         raise HTTPException(status_code=500, detail=str(e))

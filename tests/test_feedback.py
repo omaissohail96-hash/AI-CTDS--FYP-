@@ -2,40 +2,12 @@ import csv
 import pytest
 import uuid
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from src.main import app
 from src.models.models import Base, ScanHistory, AIFeedback, User, Workspace
-from src.api.deps import get_db
 from src.scripts.seed_rbac import seed_rbac
 from src.core import security
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_feedback.db"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
-
-@pytest.fixture
-def client():
-    return TestClient(app, raise_server_exceptions=False)
-
 @pytest.fixture(autouse=True)
-def setup_scan():
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-
-    db = TestingSessionLocal()
+def setup_scan(db):
     seed_rbac(db)
 
     ws = Workspace(id=uuid.uuid4(), name="Feedback Test WS")
@@ -69,7 +41,6 @@ def setup_scan():
 
     scan_id = scan.id
     ws_id = ws.id
-    db.close()
 
     return scan_id, headers_sa, headers_viewer, ws_id
 
@@ -153,14 +124,13 @@ def test_approval_exports_only_approved_feedback(client: TestClient, setup_scan,
     assert len(rows) == 1
     assert rows[0]["correct_label"] == "malicious"
 
-def test_workspace_isolation_hides_other_feedback(client: TestClient, setup_scan):
+def test_workspace_isolation_hides_other_feedback(client: TestClient, setup_scan, db):
     _, headers_sa, _, _ = setup_scan
-    db = TestingSessionLocal()
     other_workspace = Workspace(id=uuid.uuid4(), name="Other workspace")
     other_user = User(id=uuid.uuid4(), email="other@test.com", role="super_admin", workspace_id=other_workspace.id, is_active=True, hashed_password="")
     other_scan = ScanHistory(id=uuid.uuid4(), workspace_id=other_workspace.id, user_id=other_user.id, input_type="url", entity="https://other.example", verdict="safe", ml_confidence=10, risk_score=5)
     other_user_id, other_scan_id = other_user.id, other_scan.id
-    db.add_all([other_workspace, other_user, other_scan]); db.commit(); db.close()
+    db.add_all([other_workspace, other_user, other_scan]); db.commit()
     other_token = security.create_access_token(str(other_user_id))
     other_headers = {"Authorization": f"Bearer {other_token}"}
     assert client.post("/api/v1/feedback", json={"scan_id": str(other_scan_id), "feedback_type": "correct"}, headers=other_headers).status_code == 200
