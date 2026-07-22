@@ -80,13 +80,16 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, onClose }) => {
           whileHover={{ scale: 1.05 }}
           style={{
             width: '38px', height: '38px', borderRadius: '12px',
-            background: 'linear-gradient(135deg, #FF6A3D, #FF8C42)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden',
             boxShadow: '0 0 24px rgba(255,106,61,0.45)',
             flexShrink: 0,
             cursor: 'default',
           }}>
-          <Shield size={18} color="white" />
+          <img
+            src="/ChatGPT Image Jul 22, 2026, 04_24_12 PM.png"
+            alt="CyberGuard AI Logo"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         </motion.div>
         <div>
           <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#F8FAFC', lineHeight: 1.2, letterSpacing: '-0.01em' }}>CyberGuard</div>

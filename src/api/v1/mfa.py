@@ -16,7 +16,7 @@ from src.core import security
 from src.core.config import settings
 from src.core.trusted_proxy import get_client_ip
 from src.models.models import User, UserMFA
-from src.api.v1.auth import _store_refresh_token, _set_auth_cookies
+from src.api.v1.auth import _store_refresh_token, _set_auth_cookies, _record_successful_login
 from src.services.user_behavior_analytics import UserBehaviorAnalyticsService
 
 router = APIRouter()
@@ -143,6 +143,9 @@ def verify_mfa_login(
     refresh_token = security.create_refresh_token(current_user.id, token_version=current_user.refresh_token_version)
     _store_refresh_token(db, current_user, refresh_token, request)
     _set_auth_cookies(response, access_token, refresh_token)
+
+    # Record the completed login (increments login_count, updates last_login_ip/at)
+    _record_successful_login(db, current_user, request)
 
     # Audit + UBA
     from src.utils.audit import AuditLogger

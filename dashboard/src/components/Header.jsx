@@ -65,12 +65,16 @@ const Header = ({ activeTab, onMenuClick }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
         <div style={{
           width: '28px', height: '28px', borderRadius: '8px',
-          background: 'linear-gradient(135deg, rgba(255,106,61,0.2), rgba(255,140,66,0.1))',
+          overflow: 'hidden',
           border: '1px solid rgba(255,106,61,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <Shield size={13} style={{ color: '#FF6A3D' }} />
+          <img
+            src="/ChatGPT Image Jul 22, 2026, 04_24_12 PM.png"
+            alt="CyberGuard AI Logo"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         </div>
         <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 500 }}>CyberGuard AI</span>
         <span style={{ color: '#2D3748', fontSize: '0.75rem', fontWeight: 300 }}>/</span>

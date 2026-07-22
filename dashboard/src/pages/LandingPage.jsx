@@ -268,6 +268,23 @@ const LandingPage = ({ onLogin, onRegister }) => {
 
     const navLinks = ['Features', 'Dashboard', 'Pricing', 'Documentation', 'About'];
 
+    const scrollToSection = (id) => {
+        const targetId = id.toLowerCase();
+        // Map some legacy or different name variants
+        const sectionMap = {
+            'api': 'documentation',
+            'getting started': 'documentation',
+            'api reference': 'documentation',
+            'architecture': 'documentation',
+            'system manual': 'documentation'
+        };
+        const resolvedId = sectionMap[targetId] || targetId;
+        const element = document.getElementById(resolvedId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     const features = [
         { icon: Globe,       color: 'bg-blue-500/10 border border-blue-500/20 text-blue-400',       title: 'AI URL Detection',            desc: 'Random Forest classifiers trained on 500k+ phishing indicators verify URLs in under 15ms with 93% accuracy.' },
         { icon: Mail,        color: 'bg-[#FF8C42]/10 border border-[#FF8C42]/20 text-[#FF8C42]',    title: 'Email Phishing Filter',        desc: 'LSTM-powered NLP pipeline detects spam, spear-phishing, and BEC attacks at the SMTP layer in real time.' },
@@ -296,10 +313,10 @@ const LandingPage = ({ onLogin, onRegister }) => {
     ];
 
     const team = [
-        { name: 'Muhammad Farooq Azam', id: '2022F-BCE-051', initials: 'FA' },
-        { name: 'Duraid Khalid',        id: '2022F-BCE-099', initials: 'DK' },
-        { name: 'Omais Sohail',         id: '2022F-BCE-223', initials: 'OS' },
-        { name: 'Bilal Jawed',          id: '2022F-BCE-247', initials: 'BJ' },
+        { name: 'Farooq Azam', id: '2022F-BCE-051', initials: 'FA', role: 'AI and ML Backend engineer' },
+        { name: 'Duraid Khalid', id: '2022F-BCE-099', initials: 'DK', role: 'Front end developer' },
+        { name: 'Omais Sohail', id: '2022F-BCE-223', initials: 'OS', role: 'Dev Ops engineer' },
+        { name: 'Bilal Jawed', id: '2022F-BCE-247', initials: 'BJ', role: 'Front end developer' },
     ];
 
     const techs = [
@@ -334,8 +351,12 @@ const LandingPage = ({ onLogin, onRegister }) => {
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
                     {/* Logo */}
                     <div className="flex items-center gap-3 flex-shrink-0">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6A3D] to-[#FF8C42] flex items-center justify-center shadow-[0_0_20px_rgba(255,106,61,0.45)]">
-                            <Shield size={17} className="text-white" />
+                        <div className="w-9 h-9 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(255,106,61,0.45)]">
+                            <img
+                                src="/ChatGPT Image Jul 22, 2026, 04_24_12 PM.png"
+                                alt="CyberGuard AI Logo"
+                                className="w-full h-full object-cover"
+                            />
                         </div>
                         <div className="leading-tight">
                             <span className="block font-extrabold text-[13px] tracking-widest text-white">CYBERGUARD</span>
@@ -346,7 +367,11 @@ const LandingPage = ({ onLogin, onRegister }) => {
                     {/* Desktop nav links */}
                     <div className="hidden md:flex items-center gap-1">
                         {navLinks.map(l => (
-                            <button key={l} className="px-3.5 py-2 text-[13px] font-medium text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.04] transition-all">
+                            <button
+                                key={l}
+                                onClick={() => scrollToSection(l)}
+                                className="px-3.5 py-2 text-[13px] font-medium text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.04] transition-all"
+                            >
                                 {l}
                             </button>
                         ))}
@@ -377,7 +402,14 @@ const LandingPage = ({ onLogin, onRegister }) => {
                             className="md:hidden border-t border-white/[0.06] bg-[#09090B]/98 overflow-hidden">
                             <div className="px-6 py-4 space-y-1">
                                 {navLinks.map(l => (
-                                    <button key={l} className="block w-full text-left px-3 py-2.5 text-[14px] text-slate-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-all">
+                                    <button
+                                        key={l}
+                                        onClick={() => {
+                                            scrollToSection(l);
+                                            setMobileNavOpen(false);
+                                        }}
+                                        className="block w-full text-left px-3 py-2.5 text-[14px] text-slate-400 hover:text-white hover:bg-white/[0.04] rounded-lg transition-all"
+                                    >
                                         {l}
                                     </button>
                                 ))}
@@ -494,7 +526,7 @@ const LandingPage = ({ onLogin, onRegister }) => {
             </section>
 
             {/* ── DASHBOARD PREVIEW ── */}
-            <section className="w-full border-t border-white/[0.06] py-28 bg-[#0F1117]/50">
+            <section id="dashboard" className="w-full border-t border-white/[0.06] py-28 bg-[#0F1117]/50">
                 <div className="max-w-7xl mx-auto px-6">
                     <motion.div
                         initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}
@@ -737,7 +769,7 @@ const LandingPage = ({ onLogin, onRegister }) => {
             </section>
 
             {/* ── WORKFLOW ── */}
-            <section className="w-full border-t border-white/[0.06] py-28">
+            <section id="documentation" className="w-full border-t border-white/[0.06] py-28">
                 <div className="max-w-7xl mx-auto px-6">
                     <motion.div
                         initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}
@@ -808,7 +840,7 @@ const LandingPage = ({ onLogin, onRegister }) => {
             </section>
 
             {/* ── TEAM ── */}
-            <section className="w-full border-t border-white/[0.06] py-28">
+            <section id="about" className="w-full border-t border-white/[0.06] py-28">
                 <div className="max-w-7xl mx-auto px-6">
                     <motion.div
                         initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}
@@ -838,7 +870,7 @@ const LandingPage = ({ onLogin, onRegister }) => {
                                     <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mt-1">{m.id}</span>
                                 </div>
                                 <span className="inline-block text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-1 uppercase tracking-wider">
-                                    Full Stack AI Dev
+                                    {m.role}
                                 </span>
                             </motion.div>
                         ))}
@@ -847,7 +879,7 @@ const LandingPage = ({ onLogin, onRegister }) => {
             </section>
 
             {/* ── CTA ── */}
-            <section className="w-full border-t border-white/[0.06] py-28 bg-[#0F1117]/40">
+            <section id="pricing" className="w-full border-t border-white/[0.06] py-28 bg-[#0F1117]/40">
                 <div className="max-w-3xl mx-auto px-6 text-center">
                     <motion.div
                         initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}
@@ -924,7 +956,13 @@ const LandingPage = ({ onLogin, onRegister }) => {
                                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.12em] mb-4">{col.title}</div>
                                 <div className="space-y-2.5">
                                     {col.links.map(l => (
-                                        <div key={l} className="text-[13px] text-slate-500 hover:text-slate-300 cursor-pointer transition-colors">{l}</div>
+                                        <div
+                                            key={l}
+                                            onClick={() => scrollToSection(l)}
+                                            className="text-[13px] text-slate-500 hover:text-slate-300 cursor-pointer transition-colors"
+                                        >
+                                            {l}
+                                        </div>
                                     ))}
                                 </div>
                             </div>

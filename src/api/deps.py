@@ -284,6 +284,13 @@ def _resolve_jwt(token: str, db: Session) -> AuthContext:
                 ))
                 db.commit()
                 db.refresh(user)
+
+            # Record the Google/OAuth login — increment login_count and update last_login fields.
+            from datetime import datetime as _dt
+            user.login_count = (user.login_count or 0) + 1
+            user.last_login_at = _dt.utcnow()
+            user.last_login_ip = _get_client_ip(request)
+            db.commit()
         except Exception as e:
             logger.error(f"Supabase auth failed: {e}")
             print(f"Supabase auth failed: {e}")

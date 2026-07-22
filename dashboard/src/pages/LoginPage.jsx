@@ -122,8 +122,12 @@ const LoginPage = ({ onLogin, onToggleForm }) => {
                 <div className="relative z-10">
                     {/* Logo */}
                     <div className="flex items-center gap-3 mb-16">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6A3D] to-[#FF8C42] flex items-center justify-center shadow-[0_0_24px_rgba(255,106,61,0.5)]">
-                            <Shield size={19} className="text-white" />
+                        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_24px_rgba(255,106,61,0.5)]">
+                            <img
+                                src="/ChatGPT Image Jul 22, 2026, 04_24_12 PM.png"
+                                alt="CyberGuard AI Logo"
+                                className="w-full h-full object-cover"
+                            />
                         </div>
                         <div className="leading-tight">
                             <span className="block font-extrabold text-[13px] tracking-widest text-white">CYBERGUARD</span>
@@ -180,8 +184,12 @@ const LoginPage = ({ onLogin, onToggleForm }) => {
                 >
                     {/* Mobile brand header */}
                     <div className="lg:hidden flex items-center gap-3 mb-2">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6A3D] to-[#FF8C42] flex items-center justify-center shadow-[0_0_16px_rgba(255,106,61,0.4)]">
-                            <Shield size={16} className="text-white" />
+                        <div className="w-9 h-9 rounded-xl overflow-hidden shadow-[0_0_16px_rgba(255,106,61,0.4)]">
+                            <img
+                                src="/ChatGPT Image Jul 22, 2026, 04_24_12 PM.png"
+                                alt="CyberGuard AI Logo"
+                                className="w-full h-full object-cover"
+                            />
                         </div>
                         <span className="font-extrabold text-[13px] tracking-widest text-white">CYBERGUARD AI</span>
                     </div>
