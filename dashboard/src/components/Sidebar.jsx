@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Globe, Mail, Activity, ShieldAlert, Settings, LogOut,
   Shield, AlertCircle, Lock, Search, BrainCircuit, ActivitySquare,
-  CheckSquare, Network, Crosshair, ChevronRight, Zap, User, MapPin, Users
+  CheckSquare, Network, Crosshair, ChevronRight, Zap, User, MapPin, Users, Layers
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,9 +21,10 @@ const navGroups = [
   {
     label: 'Detection',
     items: [
-      { id: 'hunting',    label: 'Threat Hunting',  icon: Crosshair, roles: ['super_admin', 'workspace_admin', 'security_analyst'] },
-      { id: 'uba',        label: 'User Behavior',   icon: BrainCircuit, roles: ['super_admin', 'workspace_admin', 'security_analyst', 'viewer'] },
-      { id: 'prevention', label: 'Prevention',      icon: Lock, roles: ['super_admin', 'workspace_admin', 'security_analyst'] },
+      { id: 'incidents', label: 'Incident Stories', icon: Layers,    roles: ['super_admin', 'workspace_admin', 'security_analyst', 'viewer'] },
+      { id: 'hunting',   label: 'Threat Hunting',  icon: Crosshair,  roles: ['super_admin', 'workspace_admin', 'security_analyst'] },
+      { id: 'uba',       label: 'User Behavior',   icon: BrainCircuit, roles: ['super_admin', 'workspace_admin', 'security_analyst', 'viewer'] },
+      { id: 'prevention', label: 'Prevention',     icon: Lock,       roles: ['super_admin', 'workspace_admin', 'security_analyst'] },
     ]
   },
   {

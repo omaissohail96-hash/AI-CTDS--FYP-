@@ -17,3 +17,4 @@ export { default as MonitoringCenterPage } from './MonitoringCenterPage';
 export { default as FeedbackDashboardPage } from './FeedbackDashboardPage';
 export { default as IPTrackingPage } from './IPTrackingPage';
 export { default as WorkspaceMembersPage } from './WorkspaceMembersPage';
+export { default as IncidentsPage } from './IncidentsPage';

@@ -39435,3 +39435,403 @@ ame 'request' is not defined"}
 {"time":"2026-07-27T22:07:55","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
 {"time":"2026-07-27T22:07:55","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
 {"time":"2026-07-27T22:07:55","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/agent/analyze "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:28:58","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=db720dc7-e2d6-4fd7-86fc-7cff1e5bcfdb ip=testclient"}
+{"time":"2026-08-22T03:28:58","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:28:58","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/agent/history "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:02","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=a37c8bae-efc3-4d82-9b9f-56fa1026d0df ip=testclient"}
+{"time":"2026-08-22T03:29:02","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:02","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/agent/history "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:04","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:04","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:29:06","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:06","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:29:07","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:07","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:29:09","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:09","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:29:10","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:10","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:29:12","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=other-ws-key workspace=687d7cbb-1a86-4f0a-8d5d-f2bf08f54d13 ip=testclient"}
+{"time":"2026-08-22T03:29:12","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:12","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/agent/history "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:14","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=de4ead99-b335-404a-a440-151e439ae9ab ip=testclient"}
+{"time":"2026-08-22T03:29:14","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:29:14","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:14","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:14","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=de4ead99-b335-404a-a440-151e439ae9ab ip=testclient"}
+{"time":"2026-08-22T03:29:14","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:29:14","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:14","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:14","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=de4ead99-b335-404a-a440-151e439ae9ab ip=testclient"}
+{"time":"2026-08-22T03:29:14","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:29:14","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:14","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:16","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=62264445-14d7-4d09-9cd2-762511bd8c1d ip=testclient"}
+{"time":"2026-08-22T03:29:16","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:29:16","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:16","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:18","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=23616053-366b-456c-92b3-49cf7d9a6b9c ip=203.0.113.42"}
+{"time":"2026-08-22T03:29:18","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:29:18","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:18","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:20","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=73902163-8a59-495d-9e19-4a23761e3940 ip=testclient"}
+{"time":"2026-08-22T03:29:20","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:29:20","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:20","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:23","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:23","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:23","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:29:24","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=65953378-1ed3-4a09-940d-a4641c66e5a6 ip=testclient"}
+{"time":"2026-08-22T03:29:24","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:29:24","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:24","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/agent/analyze "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:29:27","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:27","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=c211209f-ae17-4da8-94fb-2c953aab695b role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:29:27","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:29:27","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:27","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:29","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:29","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=fcce9a25-ced8-45be-9ba9-4cdd9100fbc1 role=viewer required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:29:29","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:29:29","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:29","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:31","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:31","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=1163e058-7314-42c4-91ed-b0e189c1d343 role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:29:31","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:29:31","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:31","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:33","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:33","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=dc1781c0-1cab-43f3-8f3e-77fc86bebbd1 role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:29:33","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:29:33","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:33","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:33","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=dc1781c0-1cab-43f3-8f3e-77fc86bebbd1 role=owner required=feedback:read endpoint=/api/v1/feedback/stats"}
+{"time":"2026-08-22T03:29:33","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:33","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/feedback/stats "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:35","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:36","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=ddb3dc31-3865-43d1-baad-220c43b48945 role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:29:36","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:29:36","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:36","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:37","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:37","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=07bd0f24-8550-4fc5-995f-417f558911cd role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:29:37","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:29:37","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:37","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:39","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=48281ae6-1558-49e9-98c7-2f7dc92ccd78 role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:29:39","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"src.main","message":"CyberGuard startup completed"}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"src.services.cache_service","message":"Cache warming complete: {'blocked_entities': 0, 'threat_intel': 0}"}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"src.main","message":"CyberGuard startup completed"}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"src.services.cache_service","message":"Cache warming complete: {'blocked_entities': 0, 'threat_intel': 0}"}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:29:39","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/version "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:29:42","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:42","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:29:45","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:45","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:29:47","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:47","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:29:50","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:50","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:29:53","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:53","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:29:55","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:55","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:29:58","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:29:58","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:00","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:30:00","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:03","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:30:03","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:05","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:30:05","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:07","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:30:07","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:10","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:30:10","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:12","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:30:12","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:14","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:30:14","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:16","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:30:16","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:18","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:30:18","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:20","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:30:20","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:20","level":"INFO","logger":"detectors.web_detector_ml","message":"Loaded trained web attack model version=1.0 features=1062 classes=['CROSS-SITE SCRIPTING (XSS)', 'NORMAL', 'SQL INJECTION']"}
+{"time":"2026-08-22T03:30:20","level":"INFO","logger":"detectors.web_detector_ml","message":"Loaded trained web attack model version=1.0 features=1062 classes=['CROSS-SITE SCRIPTING (XSS)', 'NORMAL', 'SQL INJECTION']"}
+{"time":"2026-08-22T03:30:20","level":"CRITICAL","logger":"detectors.web_detector_ml","message":"Web attack model validation failed: missing required artifact(s): C:\Users\Farooq\AppData\Local\Temp\pytest-of-Farooq\pytest-0\test_missing_artifacts_raise_c0\missing_model.pkl, C:\Users\Farooq\AppData\Local\Temp\pytest-of-Farooq\pytest-0\test_missing_artifacts_raise_c0\missing_vectorizer.pkl, C:\Users\Farooq\AppData\Local\Temp\pytest-of-Farooq\pytest-0\test_missing_artifacts_raise_c0\missing_metadata.json"}
+{"time":"2026-08-22T03:30:22","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/workspace/invite "HTTP/1.1 500 Internal Server Error""}
+{"time":"2026-08-22T03:30:23","level":"INFO","logger":"httpx","message":"HTTP Request: PATCH http://testserver/api/v1/workspace/member/f2222759-8a9e-4fb0-b43d-b3013b91564d/role "HTTP/1.1 500 Internal Server Error""}
+{"time":"2026-08-22T03:30:24","level":"INFO","logger":"httpx","message":"HTTP Request: PATCH http://testserver/api/v1/workspace/member/4461abbc-fbb1-44ab-912f-6f4167357510/role "HTTP/1.1 500 Internal Server Error""}
+{"time":"2026-08-22T03:30:26","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/workspace/transfer-ownership "HTTP/1.1 500 Internal Server Error""}
+{"time":"2026-08-22T03:30:27","level":"WARNING","logger":"passlib.handlers.bcrypt","message":"(trapped) error reading bcrypt version"}
+Traceback (most recent call last):
+  File "C:\Users\Farooq\Desktop\Fyo work\Final_Year_Project\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+{"time":"2026-08-22T03:30:27","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/register "HTTP/1.1 500 Internal Server Error""}
+{"time":"2026-08-22T03:30:28","level":"INFO","logger":"httpx","message":"HTTP Request: PATCH http://testserver/api/v1/workspace/member/fe79c35d-4634-4a62-9d49-cc87f24e1250/role "HTTP/1.1 500 Internal Server Error""}
+{"time":"2026-08-22T03:32:20","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=15616552-a1b1-4d4f-a252-36946d39e168 ip=testclient"}
+{"time":"2026-08-22T03:32:20","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:20","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/agent/history "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:22","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=6947e640-bff3-4812-9b09-c48de43df74d ip=testclient"}
+{"time":"2026-08-22T03:32:22","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:22","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/agent/history "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:24","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:24","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:32:25","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:25","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:32:27","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:27","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:32:28","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:28","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:32:29","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:29","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:32:31","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=other-ws-key workspace=db2dc9b0-5f73-4e8b-b089-364215936fec ip=testclient"}
+{"time":"2026-08-22T03:32:31","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:31","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/agent/history "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:32","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=59f9c440-754b-45d4-9eb8-a1a45df6f76d ip=testclient"}
+{"time":"2026-08-22T03:32:32","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:32:32","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:32","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:32","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=59f9c440-754b-45d4-9eb8-a1a45df6f76d ip=testclient"}
+{"time":"2026-08-22T03:32:32","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:32:32","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:32","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:32","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=59f9c440-754b-45d4-9eb8-a1a45df6f76d ip=testclient"}
+{"time":"2026-08-22T03:32:32","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:32:32","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:32","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:33","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=5f2a5682-45a3-4cba-beb6-76b477993d76 ip=testclient"}
+{"time":"2026-08-22T03:32:33","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:32:33","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:34","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:35","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=0f03762f-7bf9-4966-b3f5-c86f7a978ae4 ip=203.0.113.42"}
+{"time":"2026-08-22T03:32:35","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:32:35","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:35","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:36","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=1e071bcf-42b4-4eb0-95fa-23d26c9bdffc ip=testclient"}
+{"time":"2026-08-22T03:32:36","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:32:36","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:37","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:39","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:39","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:39","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:32:40","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=test-key workspace=6b29a77c-24b3-4d95-a133-7d4624e26793 ip=testclient"}
+{"time":"2026-08-22T03:32:40","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:32:40","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:40","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/agent/analyze "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:32:42","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:42","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=e0f07303-80ee-4bd9-8b2a-822daa58a4fe role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:32:42","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:32:42","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:42","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:43","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:43","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=de014d97-ff75-4c2d-82a0-1a4b98402eb6 role=viewer required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:32:43","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:32:43","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:43","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:44","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:45","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=1464d662-fbd6-4edc-9421-eba6e7327f50 role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:32:45","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:32:45","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:45","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:46","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:46","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=182ef008-a5ae-4bfb-a095-c36b3c0368b8 role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:32:46","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:32:46","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:46","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:46","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=182ef008-a5ae-4bfb-a095-c36b3c0368b8 role=owner required=feedback:read endpoint=/api/v1/feedback/stats"}
+{"time":"2026-08-22T03:32:46","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:46","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/feedback/stats "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:47","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:47","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=fbe66ca2-8938-4f1e-809e-d6b3dfeb6f62 role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:32:47","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:32:47","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:47","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:49","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:49","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=361c8438-a90a-4797-ad62-d4f99846af05 role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:32:49","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:32:49","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:49","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:50","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=a83dad50-5784-4e49-8ee4-72d1920b8dab role=owner required=feedback:submit endpoint=/api/v1/feedback"}
+{"time":"2026-08-22T03:32:50","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/feedback "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"src.main","message":"CyberGuard startup completed"}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"src.services.cache_service","message":"Cache warming complete: {'blocked_entities': 0, 'threat_intel': 0}"}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"src.main","message":"CyberGuard startup completed"}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"src.services.cache_service","message":"Cache warming complete: {'blocked_entities': 0, 'threat_intel': 0}"}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:50","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/version "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:32:51","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:53","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:53","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/reports/security-report "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:32:54","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:56","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:56","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/reports/security-report "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:32:57","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:32:59","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:32:59","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/reports/security-report "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:33:00","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:01","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:01","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/reports/security-report "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:33:03","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:04","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:04","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/reports/security-report "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:33:06","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:07","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:07","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/monitoring "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:33:08","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:10","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:10","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/monitoring "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:33:11","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:13","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:13","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/monitoring "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:33:15","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:17","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=61b13725-b78b-4d3d-9891-a41774ddfc1f role=viewer required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:33:17","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:17","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:33:19","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:20","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=717e354a-84a6-4947-971e-79d499e723a0 role=analyst required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:33:20","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:20","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:33:21","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:23","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:23","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:33:24","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:25","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:25","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:33:26","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:28","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=69fda4f9-c0c1-452e-8ed0-4c6be5506922 role=analyst required=api_keys:write endpoint=/api/v1/api-keys/create"}
+{"time":"2026-08-22T03:33:28","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:33:28","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:28","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/api-keys/create "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:33:29","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:30","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=Test API Key workspace=1b3e981a-6381-4b16-a5de-ca49d7a647f5 ip=testclient"}
+{"time":"2026-08-22T03:33:30","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:30","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/reports/security-report "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:33:32","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:34","level":"INFO","logger":"src.api.deps","message":"API key auth OK | label=Test API Key workspace=0980d6df-7102-4156-80f7-bcc2987453c3 ip=testclient"}
+{"time":"2026-08-22T03:33:34","level":"WARNING","logger":"src.api.deps","message":"Permission denied | user=api_key role=api_key required=api_keys:read endpoint=/api/v1/api-keys/"}
+{"time":"2026-08-22T03:33:34","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:34","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/api-keys/ "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:33:35","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:36","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:36","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/reports/security-report "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:33:37","level":"INFO","logger":"src.scripts.seed_rbac","message":"RBAC seed complete: +4 roles, +24 permissions, +69 role_permissions"}
+{"time":"2026-08-22T03:33:39","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:39","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/reports/security-report "HTTP/1.1 401 Unauthorized""}
+{"time":"2026-08-22T03:33:39","level":"INFO","logger":"detectors.web_detector_ml","message":"Loaded trained web attack model version=1.0 features=1062 classes=['CROSS-SITE SCRIPTING (XSS)', 'NORMAL', 'SQL INJECTION']"}
+{"time":"2026-08-22T03:33:39","level":"INFO","logger":"detectors.web_detector_ml","message":"Loaded trained web attack model version=1.0 features=1062 classes=['CROSS-SITE SCRIPTING (XSS)', 'NORMAL', 'SQL INJECTION']"}
+{"time":"2026-08-22T03:33:39","level":"CRITICAL","logger":"detectors.web_detector_ml","message":"Web attack model validation failed: missing required artifact(s): C:\Users\Farooq\AppData\Local\Temp\pytest-of-Farooq\pytest-1\test_missing_artifacts_raise_c0\missing_model.pkl, C:\Users\Farooq\AppData\Local\Temp\pytest-of-Farooq\pytest-1\test_missing_artifacts_raise_c0\missing_vectorizer.pkl, C:\Users\Farooq\AppData\Local\Temp\pytest-of-Farooq\pytest-1\test_missing_artifacts_raise_c0\missing_metadata.json"}
+{"time":"2026-08-22T03:33:41","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/workspace/invite "HTTP/1.1 500 Internal Server Error""}
+{"time":"2026-08-22T03:33:42","level":"INFO","logger":"httpx","message":"HTTP Request: PATCH http://testserver/api/v1/workspace/member/f566ba29-2fc6-4f66-b099-2aac4c9e4a8f/role "HTTP/1.1 500 Internal Server Error""}
+{"time":"2026-08-22T03:33:43","level":"INFO","logger":"httpx","message":"HTTP Request: PATCH http://testserver/api/v1/workspace/member/480ccd0e-ae2f-4c30-9dda-328155cf9742/role "HTTP/1.1 500 Internal Server Error""}
+{"time":"2026-08-22T03:33:45","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/workspace/transfer-ownership "HTTP/1.1 500 Internal Server Error""}
+{"time":"2026-08-22T03:33:46","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:33:46","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:46","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/register "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:33:47","level":"ERROR","logger":"src.workers.tasks","message":"Synchronous task execution failed: persist_audit_log() missing 1 required positional argument: 'module'"}
+{"time":"2026-08-22T03:33:47","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:47","level":"INFO","logger":"httpx","message":"HTTP Request: POST http://testserver/api/v1/register "HTTP/1.1 200 OK""}
+{"time":"2026-08-22T03:33:47","level":"INFO","logger":"src.api.middleware","message":"request_completed"}
+{"time":"2026-08-22T03:33:47","level":"INFO","logger":"httpx","message":"HTTP Request: GET http://testserver/api/v1/rbac/my-permissions "HTTP/1.1 403 Forbidden""}
+{"time":"2026-08-22T03:33:48","level":"INFO","logger":"httpx","message":"HTTP Request: PATCH http://testserver/api/v1/workspace/member/3563d9d4-8ca7-4ad7-8937-54f339616806/role "HTTP/1.1 500 Internal Server Error""}

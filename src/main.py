@@ -1,7 +1,7 @@
 import logging
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
-from src.api.v1 import auth, agent, workspace, stats, alerts, prevention, explanations, hunting, reports, mitre, uba, health, session, false_positives, mfa, monitoring, threats, api_keys, feedback, rbac
+from src.api.v1 import auth, agent, workspace, stats, alerts, prevention, explanations, hunting, reports, mitre, uba, health, session, false_positives, mfa, monitoring, threats, api_keys, feedback, rbac, incidents
 from src.api.v1.versions import v1, v2
 from src.core.config import settings
 from src.core.database import initialize_database
@@ -82,6 +82,7 @@ app.include_router(v1.router)
 app.include_router(v2.router)
 app.include_router(api_keys.router, prefix=f"{settings.API_V1_STR}/api-keys", tags=["api-keys"])
 app.include_router(rbac.router, prefix=f"{settings.API_V1_STR}/rbac", tags=["rbac"])
+app.include_router(incidents.router, prefix=f"{settings.API_V1_STR}", tags=["incidents"])
 
 @app.on_event("startup")
 async def startup_event():

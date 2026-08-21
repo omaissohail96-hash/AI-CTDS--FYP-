@@ -27,11 +27,14 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def initialize_database():
     """Create all tables and apply incremental schema migrations."""
+    # Ensure all models are registered
+    from src.models.models import Incident, Evidence
     Base.metadata.create_all(bind=engine)
     _ensure_scan_history_schema()
     _ensure_uba_schema()
     _ensure_enterprise_schema()
     _ensure_workspace_rbac_schema()
+    _ensure_incidents_and_evidence_schema()
 
 
 def _ensure_scan_history_schema():
@@ -210,3 +213,46 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def _ensure_incidents_and_evidence_schema():
+    inspector = inspect(engine)
+
+    # Check scan_history for incident_id
+    if "scan_history" in inspector.get_table_names():
+        existing_cols = {c["name"] for c in inspector.get_columns("scan_history")}
+        if "incident_id" not in existing_cols:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE scan_history ADD COLUMN incident_id VARCHAR"))
+
+    # Check alerts for incident_id
+    if "alerts" in inspector.get_table_names():
+        existing_cols = {c["name"] for c in inspector.get_columns("alerts")}
+        if "incident_id" not in existing_cols:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE alerts ADD COLUMN incident_id VARCHAR"))
+
+    # Add indexes if not present
+    if "incidents" in inspector.get_table_names():
+        existing_idx = {i["name"] for i in inspector.get_indexes("incidents")}
+        index_ddl = {
+            "ix_incident_workspace_created": "CREATE INDEX ix_incident_workspace_created ON incidents (workspace_id, created_at)",
+            "ix_incident_workspace_status": "CREATE INDEX ix_incident_workspace_status ON incidents (workspace_id, status)",
+            "ix_incident_workspace_severity": "CREATE INDEX ix_incident_workspace_severity ON incidents (workspace_id, severity)",
+        }
+        with engine.begin() as connection:
+            for idx_name, ddl in index_ddl.items():
+                if idx_name not in existing_idx:
+                    try:
+                        connection.execute(text(ddl))
+                    except Exception:
+                        pass
+
+    if "evidence" in inspector.get_table_names():
+        existing_idx = {i["name"] for i in inspector.get_indexes("evidence")}
+        if "ix_evidence_workspace_incident" not in existing_idx:
+            with engine.begin() as connection:
+                try:
+                    connection.execute(text("CREATE INDEX ix_evidence_workspace_incident ON evidence (workspace_id, incident_alert_id)"))
+                except Exception:
+                    pass

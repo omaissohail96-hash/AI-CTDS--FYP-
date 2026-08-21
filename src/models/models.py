@@ -170,6 +170,34 @@ class APIKeyAuditLog(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class Incident(Base):
+    __tablename__ = "incidents"
+    __table_args__ = (
+        Index("ix_incident_workspace_created", "workspace_id", "created_at"),
+        Index("ix_incident_workspace_status", "workspace_id", "status"),
+        Index("ix_incident_workspace_severity", "workspace_id", "severity"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id = Column(UUID(as_uuid=True), ForeignKey("workspaces.id"), nullable=False)
+    severity = Column(String, nullable=False, default="LOW")
+    risk_score = Column(Integer, nullable=False, default=0)
+    confidence = Column(Integer, nullable=False, default=0)
+    first_seen = Column(DateTime(timezone=True), server_default=func.now())
+    last_seen = Column(DateTime(timezone=True), server_default=func.now())
+    affected_users = Column(JSON, default=list)
+    affected_ips = Column(JSON, default=list)
+    affected_urls_domains = Column(JSON, default=list)
+    affected_endpoints = Column(JSON, default=list)
+    related_alerts = Column(JSON, default=list)
+    mitre_techniques = Column(JSON, default=list)
+    correlation_reasons = Column(JSON, default=list)
+    status = Column(String, default="OPEN", index=True) # OPEN | INVESTIGATING | RESOLVED
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class ScanHistory(Base):
     __tablename__ = "scan_history"
     __table_args__ = (
@@ -183,6 +211,7 @@ class ScanHistory(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     workspace_id = Column(UUID(as_uuid=True), ForeignKey("workspaces.id"))
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    incident_id = Column(UUID(as_uuid=True), ForeignKey("incidents.id"), nullable=True)
     input_type = Column(String)        # url, email, network, web
     entity = Column(String, index=True)
     entities = Column(JSON, default=list)
@@ -317,6 +346,7 @@ class Alert(Base):
     workspace_id = Column(UUID(as_uuid=True), ForeignKey("workspaces.id"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     scan_history_id = Column(UUID(as_uuid=True), ForeignKey("scan_history.id"), nullable=True)
+    incident_id = Column(UUID(as_uuid=True), ForeignKey("incidents.id"), nullable=True)
 
     alert_type = Column(String, nullable=False)
     severity = Column(String, nullable=False, index=True)
@@ -480,3 +510,24 @@ class SystemHealthLog(Base):
     latency_ms = Column(Float, nullable=True)
     detail = Column(JSON, nullable=True)
     checked_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class Evidence(Base):
+    __tablename__ = "evidence"
+    __table_args__ = (
+        Index("ix_evidence_workspace_incident", "workspace_id", "incident_alert_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id = Column(UUID(as_uuid=True), ForeignKey("workspaces.id"), nullable=False)
+    incident_alert_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    evidence_type = Column(String, nullable=False)
+    source = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    value_indicator = Column(String, nullable=True)
+    confidence = Column(Integer, default=0)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    importance = Column(String, default="MEDIUM")
+    supporting_entity_id = Column(String, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

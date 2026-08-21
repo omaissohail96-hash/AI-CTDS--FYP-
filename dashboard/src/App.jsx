@@ -23,7 +23,8 @@ import {
   MonitoringCenterPage,
   FeedbackDashboardPage,
   IPTrackingPage,
-  WorkspaceMembersPage
+  WorkspaceMembersPage,
+  IncidentsPage
 } from './pages'
 
 const pageVariants = {
@@ -114,6 +115,7 @@ function App() {
       case 'web': return <WebAttackPage />;
       case 'ip_tracking': return <IPTrackingPage />;
       case 'members': return <WorkspaceMembersPage />;
+      case 'incidents': return <IncidentsPage />;
       case 'settings': 
         return hasRole(['super_admin', 'workspace_admin']) ? <SettingsPage /> : <AccessDenied />;
       default: return <DashboardPage />;

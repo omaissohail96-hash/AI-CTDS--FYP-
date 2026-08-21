@@ -1,5 +1,8 @@
 import pytest
 from unittest.mock import patch, AsyncMock
+import src.utils.prevention_scheduler
+import src.workers.tasks
+import detectors.web_detector_ml
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient

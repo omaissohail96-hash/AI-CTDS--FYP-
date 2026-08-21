@@ -121,6 +121,10 @@ async def agent_analyze(
         )
         db.add(scan_log)
 
+        # ── Correlation & Incident/Evidence Clustering ────────────────────
+        from src.services.incident_service import IncidentService
+        IncidentService.process_scan_correlation(db, workspace.id, scan_log, result)
+
         # 4. Increment API key success counter (if API key auth) – best-effort
         if auth.api_key:
             try:
