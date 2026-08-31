@@ -1,4 +1,4 @@
-"""Central workspace RBAC policy for CyberGuard AI."""
+﻿"""Central workspace RBAC policy for CyberGuard AI."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ ROLE_DESCRIPTIONS = {
 
 BASE_READ = {
     "dashboard:read", "scans:read", "alerts:read", "reports:read",
-    "analytics:read", "threats:read", "mitre:read",
+    "analytics:read", "threats:read", "mitre:read", "feedback:read",
 }
 
 ROLE_PERMISSIONS: dict[str, FrozenSet[str]] = {
@@ -35,7 +35,7 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[str]] = {
         "review_queue:read", "review_queue:write", "api_keys:read", "api_keys:write",
         "settings:read", "settings:write", "workspace:members:read",
         "workspace:members:manage", "workspace:ownership:transfer",
-        "workspace:delete", "workspace:billing:manage", "audit:read", "system:admin",
+        "workspace:delete", "workspace:billing:manage", "audit:read", "system:admin", "feedback:submit", "feedback:approve",
     }),
     WorkspaceRole.ADMIN.value: frozenset({
         *BASE_READ, "scans:create", "alerts:write", "alerts:acknowledge",
@@ -43,12 +43,12 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[str]] = {
         "prevention:write", "false_positives:submit", "false_positives:review",
         "review_queue:read", "review_queue:write", "api_keys:read", "api_keys:write",
         "settings:read", "settings:write", "workspace:members:read",
-        "workspace:members:manage", "audit:read",
+        "workspace:members:manage", "audit:read", "feedback:submit", "feedback:approve",
     }),
     WorkspaceRole.ANALYST.value: frozenset({
         *BASE_READ, "scans:create", "alerts:write", "hunting:read", "uba:read",
         "explanations:read", "prevention:read", "false_positives:submit",
-        "review_queue:read", "reports:export", "audit:read",
+        "review_queue:read", "reports:export", "audit:read", "feedback:submit",
     }),
     WorkspaceRole.OPERATOR.value: frozenset({
         *BASE_READ, "scans:create", "alerts:acknowledge",

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+﻿from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 import uuid
@@ -76,7 +76,7 @@ def get_feedback_stats(
     """Get high level statistics for feedback dashboard"""
     return FeedbackService.get_stats(db=db, workspace_id=workspace.id)
 
-@router.put("/{feedback_id}/approve", response_model=FeedbackResponse, dependencies=[Depends(RequirePermissions("feedback:approve")), Depends(RequireRoles("super_admin"))])
+@router.put("/{feedback_id}/approve", response_model=FeedbackResponse, dependencies=[Depends(RequirePermissions("feedback:approve")), Depends(RequireRoles("workspace_admin", "super_admin", "admin", "owner"))])
 def approve_feedback(
     feedback_id: uuid.UUID,
     db: Session = Depends(get_db),
@@ -91,7 +91,7 @@ def approve_feedback(
         user_id=current_user.id
     )
 
-@router.put("/{feedback_id}/reject", response_model=FeedbackResponse, dependencies=[Depends(RequirePermissions("feedback:approve")), Depends(RequireRoles("workspace_admin", "super_admin"))])
+@router.put("/{feedback_id}/reject", response_model=FeedbackResponse, dependencies=[Depends(RequirePermissions("feedback:approve")), Depends(RequireRoles("workspace_admin", "super_admin", "admin", "owner"))])
 def reject_feedback(
     feedback_id: uuid.UUID,
     db: Session = Depends(get_db),
@@ -106,7 +106,7 @@ def reject_feedback(
         user_id=current_user.id
     )
 
-@router.delete("/{feedback_id}", status_code=204, dependencies=[Depends(RequirePermissions("feedback:approve")), Depends(RequireRoles("workspace_admin", "super_admin"))])
+@router.delete("/{feedback_id}", status_code=204, dependencies=[Depends(RequirePermissions("feedback:approve")), Depends(RequireRoles("workspace_admin", "super_admin", "admin", "owner"))])
 def delete_feedback(
     feedback_id: uuid.UUID,
     db: Session = Depends(get_db),
